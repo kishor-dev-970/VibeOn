@@ -1,0 +1,74 @@
+{
+  "expo": {
+    "name": "Social Music",
+    "slug": "social-music",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "scheme": "socialmusic",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.example.socialmusic",
+      "infoPlist": {
+        "SKAdNetworkItems": [
+          {
+            "SKAdNetworkIdentifier": "v9wttpbfk9.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "n38lu8286q.skadnetwork"
+          }
+        ]
+      }
+    },
+    "android": {
+      "package": "com.example.socialmusic",
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.INTERNET"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true
+          }
+        }
+      ],
+      "expo-router",
+      "expo-status-bar",
+      [
+        "react-native-fbsdk-next",
+        {
+          "appID": "1475723387788890",
+          "clientToken": "dcc3919c9375feda686693c2859cc3c4",
+          "displayName": "Social Music",
+          "scheme": "fb1475723387788890",
+          "isAutoInitEnabled": true,
+          "autoLogAppEventsEnabled": false,
+          "advertiserIDCollectionEnabled": false
+        }
+      ],
+      "expo-build-properties"
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "7546a3ad-3433-487d-a0a5-45a4c3302a0f"
+      }
+    },
+    "owner": "kishorkumar970"
+  }
+}
