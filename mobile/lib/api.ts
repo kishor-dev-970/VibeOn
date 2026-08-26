@@ -74,3 +74,7 @@ export function fetchTrendingSongs(): Promise<{ songs: Song[] }> {
 export function fetchFriendStats(friendId: string): Promise<import('./types').FriendStats> {
   return request(`/api/friends/${friendId}/stats`);
 }
+
+export function fetchLiveStreams(genre: string): Promise<{ songs: Song[] }> {
+  return request(`/api/songs/live?genre=${encodeURIComponent(genre)}`);
+}

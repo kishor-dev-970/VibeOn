@@ -1,7 +1,7 @@
 import { LoginManager, AccessToken } from 'react-native-fbsdk-next';
 
 export async function facebookLogin(): Promise<string> {
-  LoginManager.setLoginBehavior('WEB_ONLY');
+  LoginManager.setLoginBehavior('WEB_ONLY' as any);
 
   const result = await LoginManager.logInWithPermissions([
     'public_profile',

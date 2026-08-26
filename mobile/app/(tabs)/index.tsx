@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  AppState,
   FlatList,
   KeyboardAvoidingView,
   Platform,
@@ -29,6 +30,7 @@ export default function HomeScreen() {
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const playerRef = useRef<any>(null);
 
   const loadTrending = useCallback(async () => {
     try {
@@ -72,6 +74,17 @@ export default function HomeScreen() {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
   }, [query, doSearch]);
+
+  // Resume playback when app comes back to foreground
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active' && currentSong && isPlaying) {
+        // YouTube iframe auto-resumes when app is active again
+        try { playerRef.current?.playVideo(); } catch {}
+      }
+    });
+    return () => sub.remove();
+  }, [currentSong, isPlaying]);
 
   const playSong = async (song: Song) => {
     setCurrentSong(song);
@@ -195,6 +208,7 @@ export default function HomeScreen() {
 
           {showVideo && (
             <YoutubePlayer
+              ref={playerRef}
               height={200}
               videoId={currentSong.videoId}
               play={isPlaying}
@@ -205,6 +219,20 @@ export default function HomeScreen() {
           {!showVideo && (
             <View style={styles.audioOnly}>
               <Text style={styles.albumArt}>♫</Text>
+              <Text style={[styles.audioLabel, { color: Colors.textMuted }]}>Audio Only</Text>
+            </View>
+          )}
+
+          {/* Hidden player for audio-only mode - renders at 1px so audio still plays */}
+          {!showVideo && (
+            <View style={{ height: 1, overflow: 'hidden' }}>
+              <YoutubePlayer
+                ref={playerRef}
+                height={1}
+                videoId={currentSong.videoId}
+                play={isPlaying}
+                onChangeState={onPlayerStateChange}
+              />
             </View>
           )}
 
@@ -348,6 +376,12 @@ const styles = StyleSheet.create({
   albumArt: {
     fontSize: 48,
     color: Colors.primary,
+  },
+  audioLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    marginTop: 8,
+    letterSpacing: 0.5,
   },
   controlsRow: {
     flexDirection: 'row',

@@ -9,12 +9,9 @@ interface AuthContextValue {
   loading: boolean;
   signIn: (token: string, user: AppUser) => void;
   signOut: () => Promise<void>;
-  darkMode: boolean;
-  toggleDarkMode: () => void;
 }
 
 const USER_KEY = 'auth.session.user';
-const DARK_MODE_KEY = 'app.darkMode';
 
 const AuthContext = createContext<AuthContextValue>({
   token: null,
@@ -22,44 +19,29 @@ const AuthContext = createContext<AuthContextValue>({
   loading: true,
   signIn: () => {},
   signOut: async () => {},
-  darkMode: true,
-  toggleDarkMode: () => {},
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
   const [user, setUser] = useState<AppUser | null>(null);
   const [loading, setLoading] = useState(true);
-  const [darkMode, setDarkMode] = useState(true);
 
   useEffect(() => {
     (async () => {
       try {
-        const [storedToken, storedUser, storedDark] = await Promise.all([
+        const [storedToken, storedUser] = await Promise.all([
           api.getStoredToken(),
           AsyncStorage.getItem(USER_KEY),
-          AsyncStorage.getItem(DARK_MODE_KEY),
         ]);
         if (storedToken && storedUser) {
           setToken(storedToken);
           setUser(JSON.parse(storedUser) as AppUser);
-        }
-        if (storedDark !== null) {
-          setDarkMode(storedDark === 'true');
         }
       } finally {
         setLoading(false);
       }
     })();
   }, []);
-
-  const toggleDarkMode = () => {
-    setDarkMode((prev) => {
-      const next = !prev;
-      AsyncStorage.setItem(DARK_MODE_KEY, String(next)).catch(() => {});
-      return next;
-    });
-  };
 
   const value = useMemo<AuthContextValue>(
     () => ({
@@ -77,10 +59,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setToken(null);
         setUser(null);
       },
-      darkMode,
-      toggleDarkMode,
     }),
-    [token, user, loading, darkMode]
+    [token, user, loading]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

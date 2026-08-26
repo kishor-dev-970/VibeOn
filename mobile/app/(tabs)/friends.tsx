@@ -17,10 +17,10 @@ import type { FriendActivity } from '../../lib/types';
 import { Colors, BorderRadius, Spacing } from '../../lib/theme';
 import FriendDetailModal from '../../components/FriendDetailModal';
 
-const POLL_INTERVAL_MS = 5000;
+const POLL_INTERVAL_MS = 30000;
 
 export default function FriendsScreen() {
-  const { signOut, darkMode } = useAuth();
+  const { signOut } = useAuth();
   const { playFriendSong } = usePlayer();
   const router = useRouter();
   const [friends, setFriends] = useState<FriendActivity[]>([]);
@@ -133,7 +133,7 @@ export default function FriendsScreen() {
         <FriendDetailModal
           friendId={selectedFriend.id}
           friendName={selectedFriend.name}
-          darkMode={darkMode}
+          darkMode={false}
           onClose={() => setSelectedFriend(null)}
           onPlaySong={handlePlaySong}
         />
