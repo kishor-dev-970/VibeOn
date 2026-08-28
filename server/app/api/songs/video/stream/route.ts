@@ -59,7 +59,7 @@ async function mergeVideo(videoId: string): Promise<string> {
     ...YTDL_COMMON_ARGS,
     '--no-part',
     '--ffmpeg-location', FFMPEG_DIR,
-    '-f', 'bv*[height<=720][ext=mp4]+ba[ext=m4a]/b[ext=mp4]/b',
+    '-f', 'bv*[height<=720][ext=mp4][vcodec^=avc1.]+ba[ext=m4a]/bv*[height<=720][ext=mp4]+ba[ext=m4a]/b[ext=mp4]/b',
     '--merge-output-format', 'mp4',
     '-o', output,
     url,

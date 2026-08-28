@@ -10,7 +10,13 @@ const PYTHON = process.env.PYTHON_PATH ?? 'C:\\Users\\kishor\\AppData\\Local\\Pr
 // YouTube bot-checks the default `web` player client from datacenter IPs
 // (Render/VPS). Non-web clients are far less likely to get the
 // "Sign in to confirm you're not a bot" block. Tried in order until one works.
+// `--js-runtimes` is required by modern yt-dlp: YouTube extraction without a JS
+// runtime is deprecated and some formats go missing. Default to `node` (present
+// in the container and node installs); override with YTDL_JS_RUNTIME if needed.
+const JS_RUNTIME = (process.env.YTDL_JS_RUNTIME ?? 'node').trim();
+
 export const YTDL_COMMON_ARGS = [
+  ...(JS_RUNTIME ? ['--js-runtimes', JS_RUNTIME] : []),
   '--extractor-args',
   'youtube:player_client=android,ios,tv,mweb,web_safari,web_embedded,android_vr,web',
 ];
