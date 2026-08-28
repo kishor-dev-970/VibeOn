@@ -55,6 +55,40 @@ export async function GET(req: NextRequest): Promise<Response> {
         : '';
     throw new ApiError(502, msg || 'Could not extract audio URL', 'audio_extract_error');
   } catch (err) {
+    // When everything failed, re-run the plain selector with -v so the error
+    // body shows exactly which client/phase YouTube blocked (useful for
+    // diagnosing the datacenter bot wall without container shell access).
+    if (err instanceof ApiError) {
+      const videoId = req.nextUrl.searchParams.get('videoId');
+      try {
+        const verbose = await execFileAsync(
+          PYTHON,
+          [
+            '-m', 'yt_dlp',
+            '--no-warnings',
+            '-v',
+            ...YTDL_COMMON_ARGS,
+            '-f', 'b',
+            '--get-url',
+            `https://www.youtube.com/watch?v=${videoId}`,
+          ],
+          { timeout: 45000, maxBuffer: 1024 * 1024 }
+        );
+        if (verbose.stdout.trim().startsWith('http')) {
+          const lines = verbose.stdout.trim().split(/\r?\n/).filter((l) => l.startsWith('http'));
+          return ok({ audioUrl: lines[0] });
+        }
+      } catch (e) {
+        const stderr = String((e as { stderr?: unknown }).stderr ?? '').trim();
+        const interesting =
+          stderr
+            .split(/\r?\n/)
+            .filter((l) => /ERROR: \[youtube\]|Sign in|Login required|bot|po_token|provider|HTTP Error|format/i.test(l))
+            .slice(-6)
+            .join('\n') || stderr;
+        throw new ApiError(502, interesting || (err as ApiError).message, 'audio_extract_error');
+      }
+    }
     return handleError(err);
   }
 }
