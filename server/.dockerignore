@@ -7,6 +7,3 @@ build
 *.tsbuildinfo
 README.md
 server-dev.log
-Dockerfile
-render.yaml
-.dockerignore

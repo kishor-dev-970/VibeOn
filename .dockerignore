@@ -1,0 +1,11 @@
+# Safety net: keeps the Docker build context clean whether Render resolves it
+# from the repo root or from the service's rootDir (pattern applies at any depth).
+*
+!server/
+!server/**
+**/node_modules
+**/.next
+**/out
+**/build
+**/.env*
+.git
