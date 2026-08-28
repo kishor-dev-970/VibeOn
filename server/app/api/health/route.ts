@@ -19,9 +19,11 @@ export async function GET(): Promise<Response> {
     const r = await execFileAsync('curl', ['-fsS', '--max-time', '5', POT_PING], {
       timeout: 7000,
     });
-    pot.running = /ok|pong|200|OK/i.test(r.stdout + r.stderr);
-  } catch {
+    pot.running = true;
+    pot.pingBody = (r.stdout + r.stderr).slice(0, 120);
+  } catch (e: any) {
     pot.running = false;
+    pot.pingErr = (e?.stderr ?? e?.message ?? '').toString().slice(0, 200);
   }
 
   try {
@@ -32,13 +34,22 @@ export async function GET(): Promise<Response> {
   }
 
   try {
-    const prov = await execFileAsync('python3', ['-m', 'yt_dlp', '--list-pot-providers'], {
-      timeout: 15000,
-      maxBuffer: 512 * 1024,
+    const prow = await execFileAsync('find', ['/root/.config/yt-dlp/plugins', '-type', 'f'], {
+      timeout: 5000,
     });
-    pot.providers = (prov.stdout + prov.stderr).trim();
+    pot.pluginFiles = (prow.stdout as string).trim().split(/\r?\n/).slice(0, 12);
+  } catch {
+    pot.pluginFiles = '(none/find failed)';
+  }
+
+  try {
+    const prov = await execFileAsync('python3', ['-m', 'yt_dlp', '--list-pot-providers'], {
+      timeout: 20000,
+      maxBuffer: 1024 * 1024,
+    });
+    pot.providers = `exit=OK\n${(prov.stdout + prov.stderr).trim()}`;
   } catch (e: any) {
-    pot.providers = `(list failed: ${(e?.stderr ?? e?.message ?? '').toString().split('\n')[0]})`;
+    pot.providers = `exit=${(e as { code?: unknown }).code ?? '?'}\n${String(e?.stderr ?? e?.stdout ?? e?.message ?? '').trim().slice(-1500)}`;
   }
 
   return ok({ status: 'ok', commit: process.env.RENDER_GIT_COMMIT ?? process.env.COMMIT_SHA ?? 'local', uptime: process.uptime(), pot });
