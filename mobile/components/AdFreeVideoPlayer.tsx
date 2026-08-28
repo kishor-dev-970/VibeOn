@@ -1,5 +1,5 @@
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useEventListener } from 'expo';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import * as api from '../lib/api';
@@ -21,6 +21,30 @@ interface AdFreeVideoPlayerProps {
 }
 
 const streamUrlCache: Record<string, string> = {};
+const inFlight: Record<string, Promise<string>> = {};
+
+async function fetchVideoStreamUrl(videoId: string, attempt = 0): Promise<string> {
+  const cachedUrl = streamUrlCache[videoId];
+  if (cachedUrl) return cachedUrl;
+  const pending = inFlight[videoId];
+  if (pending) return pending;
+  const p = api
+    .fetchVideoStream(videoId)
+    .then((r) => {
+      streamUrlCache[videoId] = r.videoUrl;
+      return r.videoUrl;
+    })
+    .catch(async (e) => {
+      if (attempt >= 2) throw e;
+      await new Promise((resolve) => setTimeout(resolve, 1200));
+      return fetchVideoStreamUrl(videoId, attempt + 1);
+    })
+    .finally(() => {
+      delete inFlight[videoId];
+    });
+  inFlight[videoId] = p;
+  return p;
+}
 
 export const AdFreeVideoPlayer = forwardRef<AdFreeVideoPlayerHandle, AdFreeVideoPlayerProps>(
   ({ videoId, height, play, onChangeState }, ref) => {
@@ -33,6 +57,7 @@ export const AdFreeVideoPlayer = forwardRef<AdFreeVideoPlayerHandle, AdFreeVideo
     onChangeStateRef.current = onChangeState;
     const didPlayRef = useRef(false);
     const replacedVideoIdRef = useRef<string | null>(null);
+    const loadRef = useRef<(() => Promise<void>) | null>(null);
 
     useEventListener(player, 'playingChange', ({ isPlaying }) => {
       if (isPlaying) didPlayRef.current = true;
@@ -54,20 +79,29 @@ export const AdFreeVideoPlayer = forwardRef<AdFreeVideoPlayerHandle, AdFreeVideo
       replacedVideoIdRef.current = null;
       const load = async () => {
         try {
-          const url = streamUrlCache[videoId] ?? (await api.fetchVideoStream(videoId)).videoUrl;
+          const url = await fetchVideoStreamUrl(videoId);
           if (cancelled) return;
           streamUrlCache[videoId] = url;
           setSource({ uri: url });
-        } catch {
+        } catch (e) {
+          console.error('stream-fetch-error', videoId, String(e));
           if (!cancelled) setError(true);
         } finally {
           if (!cancelled) setLoading(false);
         }
       };
+      loadRef.current = load;
       load();
       return () => {
         cancelled = true;
       };
+    }, [videoId]);
+
+    const retry = useCallback(() => {
+      delete streamUrlCache[videoId];
+      setError(false);
+      setLoading(true);
+      loadRef.current?.();
     }, [videoId]);
 
     useEffect(() => {
@@ -120,9 +154,9 @@ export const AdFreeVideoPlayer = forwardRef<AdFreeVideoPlayerHandle, AdFreeVideo
           </View>
         ) : null}
         {error ? (
-          <View style={[StyleSheet.absoluteFill, styles.overlay]}>
-            <Text style={styles.errorText}>Video unavailable</Text>
-          </View>
+          <Pressable style={[StyleSheet.absoluteFill, styles.overlay]} onPress={retry}>
+            <Text style={styles.errorText}>Video unavailable · Tap to retry</Text>
+          </Pressable>
         ) : null}
       </View>
     );

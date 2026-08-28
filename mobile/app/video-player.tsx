@@ -8,6 +8,7 @@ import {
   View,
 } from 'react-native';
 import { AdFreeVideoPlayer } from '../components/AdFreeVideoPlayer';
+import { YouTubeWebPlayer } from '../components/YouTubeWebPlayer';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as api from '../lib/api';
@@ -48,6 +49,7 @@ export default function VideoPlayerScreen() {
   }, [registerVideoPlayer, unregisterVideoPlayer]);
   const [suggested, setSuggested] = useState<Song[]>([]);
   const [loadingSuggestions, setLoadingSuggestions] = useState(true);
+  const [fallbackToStream, setFallbackToStream] = useState(false);
 
   const song: Song = {
     videoId: params.videoId,
@@ -114,17 +116,32 @@ export default function VideoPlayerScreen() {
       </View>
 
       <View style={styles.videoWrap}>
-        <AdFreeVideoPlayer
-          ref={youtubeRef}
-          height={220}
-          videoId={song.videoId}
-          play={isPlaying}
-          onChangeState={(state: string) => {
-            if (state === 'playing') setIsPlaying(true);
-            else if (state === 'paused') setIsPlaying(false);
-            else if (state === 'ended') handleEnd();
-          }}
-        />
+        {fallbackToStream ? (
+          <AdFreeVideoPlayer
+            ref={youtubeRef}
+            height={220}
+            videoId={song.videoId}
+            play={isPlaying}
+            onChangeState={(state: string) => {
+              if (state === 'playing') setIsPlaying(true);
+              else if (state === 'paused') setIsPlaying(false);
+              else if (state === 'ended') handleEnd();
+            }}
+          />
+        ) : (
+          <YouTubeWebPlayer
+            ref={youtubeRef}
+            height={220}
+            videoId={song.videoId}
+            play={isPlaying}
+            onChangeState={(state) => {
+              if (state === 'playing') setIsPlaying(true);
+              else if (state === 'paused') setIsPlaying(false);
+              else if (state === 'ended') handleEnd();
+            }}
+            onFallbackToStream={() => setFallbackToStream(true)}
+          />
+        )}
       </View>
 
       <View style={styles.meta}>

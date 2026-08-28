@@ -9,6 +9,7 @@ import { promisify } from 'util';
 import { ApiError } from '@/lib/env';
 import { YTDL_COMMON_ARGS } from '@/lib/ytdl';
 import { corsPreflight, handleError } from '@/lib/http';
+import { getOrExtract } from '@/lib/stream-cache';
 
 const execFileAsync = promisify(execFile);
 
@@ -125,9 +126,24 @@ export async function GET(req: NextRequest): Promise<Response> {
     }
 
     // Fast path: single-file (progressive) direct URL, no merge needed.
-    const progressive = await resolveProgressiveUrl(videoId);
+    // Result is cached ~10 min and concurrent requests share one extraction.
+    const progressive = await getOrExtract(`video:${videoId}`, () =>
+      resolveProgressiveUrl(videoId).then((u) => u ?? '')
+    );
     if (progressive) {
       return new Response(JSON.stringify({ videoUrl: progressive }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json', ...CORS_HEADERS },
+      });
+    }
+
+    // Already merged earlier -> serve the cached file without re-extracting.
+    const cachedFile = await getCachedPath(videoId);
+    if (cachedFile) {
+      const proto = req.headers.get('x-forwarded-proto') ?? 'http';
+      const host = req.headers.get('host') ?? 'localhost:3000';
+      const videoUrl = `${proto}://${host}/api/songs/video/stream?videoId=${encodeURIComponent(videoId)}&stream=1`;
+      return new Response(JSON.stringify({ videoUrl }), {
         status: 200,
         headers: { 'Content-Type': 'application/json', ...CORS_HEADERS },
       });

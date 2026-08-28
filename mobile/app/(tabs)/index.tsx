@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AdFreeVideoPlayer } from '../../components/AdFreeVideoPlayer';
+import { YouTubeWebPlayer } from '../../components/YouTubeWebPlayer';
 import { useRouter } from 'expo-router';
 import MediaTabs from '../../components/MediaTabs';
 import AudioSeekBar from '../../components/AudioSeekBar';
@@ -40,6 +41,7 @@ export default function HomeScreen() {
   const [trending, setTrending] = useState<Song[]>([]);
   const [searching, setSearching] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [fallbackToStream, setFallbackToStream] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const loadTrending = useCallback(async () => {
@@ -162,17 +164,32 @@ export default function HomeScreen() {
           </View>
 
           {showVideo ? (
-            <AdFreeVideoPlayer
-              ref={youtubeRef}
-              height={200}
-              videoId={currentSong.videoId}
-              play={isPlaying && !videoScreenActive}
-              onChangeState={(state: string) => {
-                if (state === 'playing') setIsPlaying(true);
-                else if (state === 'paused') setIsPlaying(false);
-                else if (state === 'ended') stopPlaying();
-              }}
-            />
+            fallbackToStream ? (
+              <AdFreeVideoPlayer
+                ref={youtubeRef}
+                height={200}
+                videoId={currentSong.videoId}
+                play={isPlaying && !videoScreenActive}
+                onChangeState={(state: string) => {
+                  if (state === 'playing') setIsPlaying(true);
+                  else if (state === 'paused') setIsPlaying(false);
+                  else if (state === 'ended') stopPlaying();
+                }}
+              />
+            ) : (
+              <YouTubeWebPlayer
+                ref={youtubeRef}
+                height={200}
+                videoId={currentSong.videoId}
+                play={isPlaying && !videoScreenActive}
+                onChangeState={(state) => {
+                  if (state === 'playing') setIsPlaying(true);
+                  else if (state === 'paused') setIsPlaying(false);
+                  else if (state === 'ended') stopPlaying();
+                }}
+                onFallbackToStream={() => setFallbackToStream(true)}
+              />
+            )
           ) : (
             <View style={styles.audioOnly}>
               {!!currentSong.thumbnailUrl && (
