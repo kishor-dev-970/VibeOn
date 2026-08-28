@@ -25,6 +25,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
       ca-certificates \
       curl \
       unzip \
+      quickjs \
     && pip3 install --break-system-packages --no-cache-dir --prefer-binary yt-dlp \
     && rm -rf /var/lib/apt/lists/*
 

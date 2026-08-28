@@ -19,32 +19,41 @@ export async function GET(req: NextRequest): Promise<Response> {
     if (!videoId) throw new ApiError(400, 'videoId required', 'bad_request');
 
     const url = `https://www.youtube.com/watch?v=${videoId}`;
-    const args = [
-      '-m', 'yt_dlp',
-      '--no-warnings',
-      ...YTDL_COMMON_ARGS,
-      '-f', 'bestaudio',
-      '--get-url',
-      url,
-    ];
 
-    let stdout = '';
-    try {
-      const { stdout: out } = await execFileAsync(PYTHON, args, {
-        timeout: 60000,
-        maxBuffer: 1024 * 1024,
-      });
-      stdout = out.trim();
-    } catch (e: any) {
-      const msg = e?.stderr?.trim?.() || e?.message || 'Audio extraction failed';
-      throw new ApiError(502, msg, 'audio_extract_error');
+    // Audio-only DASH formats can be missing URLs (YouTube SABR experiment
+    // / needing n-challenge solving), so fall back to the same single-file
+    // progressive formats the video route uses (proven to work from Render).
+    const selectors = ['bestaudio', '22/18/b[ext=mp4]/b'];
+    let lastError: unknown = null;
+
+    for (const selector of selectors) {
+      const args = [
+        '-m', 'yt_dlp',
+        '--no-warnings',
+        ...YTDL_COMMON_ARGS,
+        '-f', selector,
+        '--get-url',
+        url,
+      ];
+      try {
+        const { stdout } = await execFileAsync(PYTHON, args, {
+          timeout: 45000,
+          maxBuffer: 1024 * 1024,
+        });
+        const lines = stdout.trim().split(/\r?\n/).filter((l) => l.startsWith('http'));
+        if (lines.length === 1) {
+          return ok({ audioUrl: lines[0] });
+        }
+      } catch (e) {
+        lastError = e;
+      }
     }
 
-    if (!stdout || !stdout.startsWith('http')) {
-      throw new ApiError(502, 'Could not extract audio URL', 'audio_extract_error');
-    }
-
-    return ok({ audioUrl: stdout });
+    const msg =
+      lastError && typeof lastError === 'object' && 'stderr' in lastError
+        ? String((lastError as { stderr?: unknown }).stderr ?? '').trim()
+        : '';
+    throw new ApiError(502, msg || 'Could not extract audio URL', 'audio_extract_error');
   } catch (err) {
     return handleError(err);
   }
