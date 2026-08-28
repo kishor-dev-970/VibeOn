@@ -34,10 +34,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN curl -fsSL -o /usr/local/bin/bgutil-pot \
       https://github.com/jim60105/bgutil-ytdlp-pot-provider-rs/releases/latest/download/bgutil-pot-linux-x86_64 \
     && chmod +x /usr/local/bin/bgutil-pot \
-    && mkdir -p /root/.config/yt-dlp/plugins \
+    && mkdir -p /root/.config/yt-dlp/plugins/bgutil-ytdlp-pot-provider \
     && curl -fsSL -o /tmp/bgutil-pot-plugin.zip \
       https://github.com/jim60105/bgutil-ytdlp-pot-provider-rs/releases/latest/download/bgutil-ytdlp-pot-provider-rs.zip \
-    && (cd /root/.config/yt-dlp/plugins && unzip -q /tmp/bgutil-pot-plugin.zip) \
+    && unzip -q /tmp/bgutil-pot-plugin.zip -d /root/.config/yt-dlp/plugins/bgutil-ytdlp-pot-provider \
     && rm /tmp/bgutil-pot-plugin.zip
 
 WORKDIR /app
