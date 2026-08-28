@@ -7,6 +7,11 @@ const execFileAsync = promisify(execFile);
 
 const PYTHON = process.env.PYTHON_PATH ?? 'C:\\Users\\kishor\\AppData\\Local\\Programs\\Python\\Python312\\python.exe';
 
+// YouTube bot-checks the default `web` player client from datacenter IPs
+// (Render/VPS). web_embedded and android are far less likely to get the
+// "Sign in to confirm you're not a bot" block. Tried in order until one works.
+export const YTDL_COMMON_ARGS = ['--extractor-args', 'youtube:player_client=web_embedded,android'];
+
 interface YtdlEntry {
   id?: string;
   title?: string;
@@ -43,6 +48,7 @@ async function runSearch(query: string, count = 10): Promise<YtdlEntry[]> {
       [
         '-m', 'yt_dlp',
         '--no-warnings',
+        ...YTDL_COMMON_ARGS,
         '--flat-playlist',
         '-J',
         `ytsearch${count}:${query}`,

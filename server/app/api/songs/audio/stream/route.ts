@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
 import { ApiError } from '@/lib/env';
+import { YTDL_COMMON_ARGS } from '@/lib/ytdl';
 import { corsPreflight, handleError, ok } from '@/lib/http';
 import { execFile } from 'child_process';
 import { promisify } from 'util';
@@ -21,6 +22,7 @@ export async function GET(req: NextRequest): Promise<Response> {
     const args = [
       '-m', 'yt_dlp',
       '--no-warnings',
+      ...YTDL_COMMON_ARGS,
       '-f', 'bestaudio',
       '--get-url',
       url,

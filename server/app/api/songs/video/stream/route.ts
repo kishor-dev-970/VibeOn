@@ -7,6 +7,7 @@ import { join } from 'node:path';
 import { execFile } from 'child_process';
 import { promisify } from 'util';
 import { ApiError } from '@/lib/env';
+import { YTDL_COMMON_ARGS } from '@/lib/ytdl';
 import { corsPreflight, handleError } from '@/lib/http';
 
 const execFileAsync = promisify(execFile);
@@ -35,7 +36,7 @@ async function getCachedPath(videoId: string): Promise<string | null> {
 
 async function resolveProgressiveUrl(videoId: string): Promise<string | null> {
   const url = `https://www.youtube.com/watch?v=${videoId}`;
-  const args = ['-m', 'yt_dlp', '--no-warnings', '-f', '22/18/b[ext=mp4]/b', '--get-url', url];
+  const args = ['-m', 'yt_dlp', '--no-warnings', ...YTDL_COMMON_ARGS, '-f', '22/18/b[ext=mp4]/b', '--get-url', url];
   try {
     const { stdout } = await execFileAsync(PYTHON, args, {
       timeout: 30000,
@@ -55,6 +56,7 @@ async function mergeVideo(videoId: string): Promise<string> {
   const args = [
     '-m', 'yt_dlp',
     '--no-warnings',
+    ...YTDL_COMMON_ARGS,
     '--no-part',
     '--ffmpeg-location', FFMPEG_DIR,
     '-f', 'bv*[height<=720][ext=mp4]+ba[ext=m4a]/b[ext=mp4]/b',
