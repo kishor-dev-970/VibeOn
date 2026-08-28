@@ -8,6 +8,7 @@ import android.util.Log
 import android.view.ViewGroup
 import android.webkit.JavascriptInterface
 import android.webkit.RenderProcessGoneDetail
+import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
 import android.webkit.WebSettings
@@ -59,7 +60,10 @@ class BraveliteWebView(context: Context) : android.widget.FrameLayout(context) {
             "setInterval(function(){try{" +
             "var v=document.querySelector('video');" +
             "var m=(location.href||'').match(/[?&]v=([A-Za-z0-9_-]{11})/);" +
-            "var err=!!document.querySelector('.ytp-error,.ytp-error-message');" +
+            "var txt=document.body?document.body.innerText:'';" +
+            "var err=!!(document.querySelector('.ytp-error,.ytp-error-message')||" +
+            "(txt&&/Video player configuration error|This video is unavailable|" +
+            "Playback on other apps disabled|An error occurred/i.test(txt)));" +
             "MusicAppBridge.onPlaybackState(m?m[1]:'',v?v.currentTime:-1," +
             "(v?v.paused:true),(document.title||'').replace(/\\s*[-|]\\s*YouTube.*$/i,'')," +
             "v?!!v.ended:false,err);}catch(e){}},500);})();"
@@ -160,7 +164,12 @@ class BraveliteWebView(context: Context) : android.widget.FrameLayout(context) {
         hasError = false
         watchFallbackLoaded = false
         lastPlaybackState = null
-        getOrCreateWebView().loadUrl(embedUrl(videoId, autoplay))
+        // YouTube embeds require an HTTP Referer (error 153 otherwise); a direct
+        // top-level WebView navigation sends none, so add one explicitly.
+        getOrCreateWebView().loadUrl(
+            embedUrl(videoId, autoplay),
+            mapOf("Referer" to "https://www.youtube-nocookie.com/")
+        )
     }
 
     fun loadWatchFallback() {
@@ -258,6 +267,12 @@ class BraveliteWebView(context: Context) : android.widget.FrameLayout(context) {
         override fun onPageFinished(view: WebView, url: String?) {
             Log.d(TAG, "page finished: $url")
             injectAdblock()
+        }
+
+        override fun onReceivedError(view: WebView, request: WebResourceRequest, error: WebResourceError) {
+            if (request.isForMainFrame) {
+                Log.e(TAG, "main frame error ${error.errorCode} ${error.description} for ${request.url}")
+            }
         }
 
         override fun onRenderProcessGone(view: WebView, detail: RenderProcessGoneDetail): Boolean {
