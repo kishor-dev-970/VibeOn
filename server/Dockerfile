@@ -1,10 +1,12 @@
 # syntax=docker/dockerfile:1
 
 # ---------- deps ----------
+# Uses `npm install` (not `npm ci`): npm ci hard-fails on any lockfile/platform
+# skew (e.g. optional @emnapi bindings), while install self-heals the graph in-image.
 FROM node:24-slim AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
-RUN npm ci
+RUN npm install --no-audit --no-fund
 
 # ---------- build ----------
 FROM node:24-slim AS builder
