@@ -51,7 +51,7 @@ export default function SettingsScreen() {
         <Text style={styles.sectionTitle}>ABOUT</Text>
         <View style={styles.card}>
           <Text style={styles.settingLabel}>Social Music</Text>
-          <Text style={styles.version}>Version 1.0.0</Text>
+          <Text style={styles.version}>Version 1.2.1</Text>
           <View style={styles.divider} />
           <Text style={styles.about}>
             Design & Developed by KK{'\n'}

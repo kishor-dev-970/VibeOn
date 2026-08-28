@@ -52,14 +52,16 @@ export function searchSongs(q: string): Promise<{ songs: Song[] }> {
   return request(`/api/songs/search?q=${encodeURIComponent(q)}`);
 }
 
-export function updateNowPlaying(song: Song, isPlaying: boolean): Promise<unknown> {
+export async function updateNowPlaying(song: Song, isPlaying: boolean): Promise<unknown> {
+  if (!(await getStoredToken())) return undefined;
   return request('/api/activity', {
     method: 'PUT',
     body: JSON.stringify({ song, isPlaying }),
   });
 }
 
-export function clearNowPlaying(): Promise<unknown> {
+export async function clearNowPlaying(): Promise<unknown> {
+  if (!(await getStoredToken())) return undefined;
   return request('/api/activity', { method: 'DELETE' });
 }
 
@@ -77,4 +79,8 @@ export function fetchFriendStats(friendId: string): Promise<import('./types').Fr
 
 export function fetchLiveStreams(genre: string): Promise<{ songs: Song[] }> {
   return request(`/api/songs/live?genre=${encodeURIComponent(genre)}`);
+}
+
+export function fetchAudioStream(videoId: string): Promise<{ audioUrl: string }> {
+  return request(`/api/songs/audio/stream?videoId=${encodeURIComponent(videoId)}`);
 }

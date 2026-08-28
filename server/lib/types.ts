@@ -10,6 +10,10 @@ export interface Song {
   title: string;
   channel: string;
   thumbnailUrl: string;
+  source?: 'youtube' | 'spotify';
+  trackId?: string;
+  previewUrl?: string;
+  albumName?: string;
 }
 
 export interface NowPlaying extends Song {

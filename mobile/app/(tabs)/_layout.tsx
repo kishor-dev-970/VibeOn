@@ -22,6 +22,7 @@ export default function TabsLayout() {
         name="index"
         options={{
           title: 'Home',
+          headerShown: false,
           tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 22 }}>🏠</Text>,
         }}
       />

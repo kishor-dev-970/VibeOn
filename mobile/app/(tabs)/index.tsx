@@ -1,36 +1,46 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  ActivityIndicator,
-  AppState,
-  FlatList,
+  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
-  RefreshControl,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import YoutubePlayer from 'react-native-youtube-iframe';
 import { useRouter } from 'expo-router';
-import SongItem from '../../components/SongItem';
+import MediaTabs from '../../components/MediaTabs';
+import AudioSeekBar from '../../components/AudioSeekBar';
 import * as api from '../../lib/api';
 import type { Song } from '../../lib/types';
 import { Colors, BorderRadius, Spacing } from '../../lib/theme';
 import { usePlayer } from '../../context/PlayerContext';
 
+type Mode = 'video' | 'audio';
+
 export default function HomeScreen() {
   const router = useRouter();
-  const { currentSong, isPlaying, showVideo, setCurrentSong, setIsPlaying, setShowVideo, playFriendSong } = usePlayer();
+  const {
+    currentSong,
+    isPlaying,
+    showVideo,
+    videoScreenActive,
+    setShowVideo,
+    playSong,
+    togglePlayPause,
+    stopPlaying,
+    setIsPlaying,
+    youtubeRef,
+  } = usePlayer();
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState<Song[]>([]);
+  const [searchResults, setSearchResults] = useState<Song[]>([]);
   const [trending, setTrending] = useState<Song[]>([]);
   const [searching, setSearching] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const playerRef = useRef<any>(null);
 
   const loadTrending = useCallback(async () => {
     try {
@@ -43,25 +53,16 @@ export default function HomeScreen() {
     loadTrending();
   }, [loadTrending]);
 
-  const onRefresh = useCallback(async () => {
-    setRefreshing(true);
-    await loadTrending();
-    setRefreshing(false);
-  }, [loadTrending]);
-
   const doSearch = useCallback(async (q: string) => {
     if (q.trim().length < 2) {
-      setResults([]);
-      setError(null);
+      setSearchResults([]);
       return;
     }
     setSearching(true);
-    setError(null);
     try {
       const data = await api.searchSongs(q.trim());
-      setResults(data.songs);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Search failed');
+      setSearchResults(data.songs);
+    } catch {
     } finally {
       setSearching(false);
     }
@@ -75,69 +76,38 @@ export default function HomeScreen() {
     };
   }, [query, doSearch]);
 
-  // Resume playback when app comes back to foreground
-  useEffect(() => {
-    const sub = AppState.addEventListener('change', (state) => {
-      if (state === 'active' && currentSong && isPlaying) {
-        // YouTube iframe auto-resumes when app is active again
-        try { playerRef.current?.playVideo(); } catch {}
-      }
-    });
-    return () => sub.remove();
-  }, [currentSong, isPlaying]);
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await loadTrending();
+    setRefreshing(false);
+  }, [loadTrending]);
 
-  const playSong = async (song: Song) => {
-    setCurrentSong(song);
-    setIsPlaying(true);
-    setShowVideo(false);
-    try {
-      await api.updateNowPlaying(song, true);
-    } catch {}
-  };
-
-  const stopPlaying = async () => {
-    setCurrentSong(null);
-    setIsPlaying(false);
-    setShowVideo(false);
-    try {
-      await api.clearNowPlaying();
-    } catch {}
-  };
-
-  const onPlayerStateChange = async (state: string) => {
-    if (!currentSong) return;
-    if (state === 'playing') {
-      setIsPlaying(true);
-      try {
-        await api.updateNowPlaying(currentSong, true);
-      } catch {}
-    } else if (state === 'paused') {
-      setIsPlaying(false);
-      try {
-        await api.updateNowPlaying(currentSong, false);
-      } catch {}
-    } else if (state === 'ended') {
-      await stopPlaying();
-    }
-  };
-
-  const togglePlayPause = async () => {
-    if (!currentSong) return;
-    const next = !isPlaying;
-    setIsPlaying(next);
-    try {
-      await api.updateNowPlaying(currentSong, next);
-    } catch {}
-  };
+  const isAudioMode = !showVideo;
+  const mode: Mode = showVideo ? 'video' : 'audio';
 
   const isSearching = query.trim().length >= 2;
-  const displayData = isSearching ? results : trending;
+  const displaySongs = isSearching ? searchResults : trending;
+  const activeSongId = currentSong?.videoId ?? null;
+
+  const handlePlay = useCallback((song: Song) => {
+    if (showVideo) {
+      router.push({
+        pathname: '/video-player',
+        params: {
+          videoId: song.videoId,
+          title: song.title,
+          channel: song.channel,
+          thumbnailUrl: song.thumbnailUrl,
+        },
+      });
+    } else {
+      playSong(song, true);
+    }
+  }, [showVideo, router, playSong]);
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <View style={styles.headerRow}>
         <Text style={styles.headerTitle}>Home</Text>
         <Pressable onPress={() => router.push('/settings')} hitSlop={12}>
@@ -149,7 +119,7 @@ export default function HomeScreen() {
         <Text style={styles.searchIcon}>🔍</Text>
         <TextInput
           style={[styles.searchInput, { color: Colors.text }]}
-          placeholder="Search songs on YouTube..."
+          placeholder="Search songs..."
           placeholderTextColor={Colors.textSubtle}
           value={query}
           onChangeText={setQuery}
@@ -159,33 +129,16 @@ export default function HomeScreen() {
         />
       </View>
 
-      {error && <Text style={[styles.error, { color: Colors.error }]}>{error}</Text>}
-
-      <Text style={[styles.sectionLabel, { color: Colors.textMuted }]}>
-        {isSearching ? 'SEARCH RESULTS' : 'TRENDING NOW'}
-      </Text>
-
-      <FlatList
-        data={displayData}
-        keyExtractor={(item) => item.videoId}
-        renderItem={({ item }) => (
-          <SongItem song={item} active={item.videoId === currentSong?.videoId} onPress={() => playSong(item)} />
-        )}
-        ListEmptyComponent={
-          searching ? (
-            <ActivityIndicator style={{ marginTop: 32 }} color={Colors.primary} />
-          ) : isSearching ? (
-            <Text style={[styles.empty, { color: Colors.textMuted }]}>No songs found</Text>
-          ) : (
-            <Text style={[styles.empty, { color: Colors.textMuted }]}>No trending songs yet</Text>
-          )
-        }
-        contentContainerStyle={{ paddingBottom: currentSong ? 320 : 24 }}
-        refreshControl={
-          !isSearching ? (
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.primary} />
-          ) : undefined
-        }
+      <MediaTabs
+        mode={mode}
+        onModeChange={(m) => setShowVideo(m === 'video')}
+        songs={displaySongs}
+        loading={searching && isSearching}
+        refreshing={refreshing}
+        onRefresh={onRefresh}
+        onPlay={handlePlay}
+        activeSongId={activeSongId}
+        emptyLabel={isSearching ? 'No songs found' : 'No trending songs yet'}
       />
 
       {currentSong && (
@@ -193,7 +146,9 @@ export default function HomeScreen() {
           <View style={styles.playerAccent} />
           <View style={styles.playerHeader}>
             <View style={styles.playerMeta}>
-              <Text style={[styles.nowPlayingLabel, { color: Colors.primary }]}>NOW PLAYING</Text>
+              <Text style={[styles.nowPlayingLabel, { color: Colors.primary }]}>
+                {isAudioMode ? 'NOW PLAYING · AUDIO' : 'NOW PLAYING'}
+              </Text>
               <Text style={[styles.playerTitle, { color: Colors.text }]} numberOfLines={1}>
                 {currentSong.title}
               </Text>
@@ -206,48 +161,34 @@ export default function HomeScreen() {
             </Pressable>
           </View>
 
-          {showVideo && (
+          {showVideo ? (
             <YoutubePlayer
-              ref={playerRef}
+              ref={youtubeRef}
               height={200}
               videoId={currentSong.videoId}
-              play={isPlaying}
-              onChangeState={onPlayerStateChange}
+              play={isPlaying && !videoScreenActive}
+              onChangeState={(state: string) => {
+                if (state === 'playing') setIsPlaying(true);
+                else if (state === 'paused') setIsPlaying(false);
+                else if (state === 'ended') stopPlaying();
+              }}
             />
-          )}
-
-          {!showVideo && (
+          ) : (
             <View style={styles.audioOnly}>
-              <Text style={styles.albumArt}>♫</Text>
-              <Text style={[styles.audioLabel, { color: Colors.textMuted }]}>Audio Only</Text>
+              {!!currentSong.thumbnailUrl && (
+                <Image source={{ uri: currentSong.thumbnailUrl }} style={styles.artwork} />
+              )}
+              <Text style={styles.audioLabel}>
+                {isAudioMode ? 'Ad-free audio · plays in background' : 'Playing audio'}
+              </Text>
             </View>
           )}
 
-          {/* Hidden player for audio-only mode - renders at 1px so audio still plays */}
-          {!showVideo && (
-            <View style={{ height: 1, overflow: 'hidden' }}>
-              <YoutubePlayer
-                ref={playerRef}
-                height={1}
-                videoId={currentSong.videoId}
-                play={isPlaying}
-                onChangeState={onPlayerStateChange}
-              />
-            </View>
-          )}
+          {isAudioMode && <AudioSeekBar />}
 
           <View style={styles.controlsRow}>
             <Pressable onPress={togglePlayPause} style={[styles.playPauseBtn, { backgroundColor: Colors.primary }]}>
               <Text style={styles.playPauseText}>{isPlaying ? '❚❚' : '▶'}</Text>
-            </Pressable>
-
-            <Pressable
-              onPress={() => setShowVideo(!showVideo)}
-              style={[styles.videoToggle, { backgroundColor: showVideo ? Colors.secondary : Colors.bgCardLight }]}
-            >
-              <Text style={[styles.videoToggleText, { color: showVideo ? Colors.text : Colors.textMuted }]}>
-                {showVideo ? 'Video ON' : 'Show Video'}
-              </Text>
             </Pressable>
           </View>
 
@@ -257,162 +198,57 @@ export default function HomeScreen() {
         </View>
       )}
     </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.bg,
-  },
+  container: { flex: 1, backgroundColor: Colors.bg },
+  flex: { flex: 1 },
   headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.sm,
-    paddingBottom: Spacing.md,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: Spacing.lg, paddingTop: Spacing.sm, paddingBottom: Spacing.md,
   },
-  headerTitle: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: Colors.text,
-  },
-  settingsIcon: {
-    fontSize: 24,
-  },
+  headerTitle: { fontSize: 28, fontWeight: '800', color: Colors.text },
+  settingsIcon: { fontSize: 24 },
   searchBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: BorderRadius.md,
-    marginHorizontal: Spacing.lg,
-    marginBottom: Spacing.md,
-    paddingHorizontal: Spacing.md,
-    gap: 8,
+    flexDirection: 'row', alignItems: 'center', borderRadius: BorderRadius.md,
+    marginHorizontal: Spacing.lg, marginBottom: Spacing.md, paddingHorizontal: Spacing.md, gap: 8,
   },
-  searchIcon: {
-    fontSize: 16,
-  },
-  searchInput: {
-    flex: 1,
-    paddingVertical: 12,
-    fontSize: 15,
-  },
-  error: {
-    textAlign: 'center',
-    marginBottom: 8,
-    fontSize: 13,
-  },
-  sectionLabel: {
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 1.2,
-    marginHorizontal: Spacing.lg,
-    marginBottom: Spacing.sm,
-  },
-  empty: {
-    textAlign: 'center',
-    marginTop: 40,
-    fontSize: 14,
-  },
+  searchIcon: { fontSize: 16 },
+  searchInput: { flex: 1, paddingVertical: 12, fontSize: 15 },
   playerCard: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    borderTopLeftRadius: BorderRadius.xl,
-    borderTopRightRadius: BorderRadius.xl,
-    paddingTop: Spacing.xs,
-    borderTopWidth: 1,
-    shadowColor: '#000',
-    shadowOpacity: 0.4,
-    shadowRadius: 20,
-    shadowOffset: { width: 0, height: -6 },
-    elevation: 12,
+    position: 'absolute', left: 0, right: 0, bottom: 0,
+    borderTopLeftRadius: BorderRadius.xl, borderTopRightRadius: BorderRadius.xl,
+    paddingTop: Spacing.xs, borderTopWidth: 1,
+    shadowColor: '#000', shadowOpacity: 0.4, shadowRadius: 20,
+    shadowOffset: { width: 0, height: -6 }, elevation: 12,
   },
   playerAccent: {
-    width: 40,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: Colors.primary,
-    alignSelf: 'center',
-    marginTop: Spacing.sm,
-    marginBottom: Spacing.xs,
+    width: 40, height: 4, borderRadius: 2, backgroundColor: Colors.primary,
+    alignSelf: 'center', marginTop: Spacing.sm, marginBottom: Spacing.xs,
   },
   playerHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing.sm,
+    flexDirection: 'row', alignItems: 'center', paddingHorizontal: Spacing.lg, paddingBottom: Spacing.sm,
   },
-  playerMeta: {
-    flex: 1,
-  },
-  nowPlayingLabel: {
-    fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: 1,
-    marginBottom: 2,
-  },
-  playerTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-  },
-  playerChannel: {
-    fontSize: 12,
-    marginTop: 1,
-  },
-  closeBtn: {
-    padding: Spacing.sm,
-  },
-  close: {
-    fontSize: 18,
-  },
+  playerMeta: { flex: 1 },
+  nowPlayingLabel: { fontSize: 10, fontWeight: '700', letterSpacing: 1, marginBottom: 2 },
+  playerTitle: { fontSize: 15, fontWeight: '700' },
+  playerChannel: { fontSize: 12, marginTop: 1 },
+  closeBtn: { padding: Spacing.sm },
+  close: { fontSize: 18 },
   audioOnly: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: 120,
+    alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 12, height: 90,
   },
-  albumArt: {
-    fontSize: 48,
-    color: Colors.primary,
-  },
-  audioLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    marginTop: 8,
-    letterSpacing: 0.5,
-  },
+  artwork: { width: 64, height: 64, borderRadius: BorderRadius.md, backgroundColor: Colors.bgCardLight },
+  audioLabel: { fontSize: 12, fontWeight: '600', color: Colors.textMuted },
   controlsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.sm,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    paddingHorizontal: Spacing.lg, paddingVertical: Spacing.sm,
   },
   playPauseBtn: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
+    width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center',
   },
-  playPauseText: {
-    fontSize: 18,
-    color: Colors.text,
-  },
-  videoToggle: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: BorderRadius.full,
-  },
-  videoToggleText: {
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  listeningNote: {
-    fontSize: 11,
-    textAlign: 'center',
-    paddingBottom: Spacing.lg,
-  },
+  playPauseText: { fontSize: 18, color: Colors.text },
+  listeningNote: { fontSize: 11, textAlign: 'center', paddingBottom: Spacing.lg },
 });

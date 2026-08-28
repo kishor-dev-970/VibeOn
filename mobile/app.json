@@ -2,7 +2,7 @@
   "expo": {
     "name": "Social Music",
     "slug": "social-music",
-    "version": "1.0.0",
+    "version": "1.2.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -31,7 +31,11 @@
       },
       "predictiveBackGestureEnabled": false,
       "permissions": [
-        "android.permission.INTERNET"
+        "android.permission.INTERNET",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK",
+        "android.permission.WAKE_LOCK",
+        "android.permission.POST_NOTIFICATIONS"
       ]
     },
     "web": {
@@ -49,6 +53,13 @@
       ],
       "expo-router",
       "expo-status-bar",
+      [
+        "expo-audio",
+        {
+          "enableBackgroundPlayback": true,
+          "recordAudioAndroid": false
+        }
+      ],
       [
         "react-native-fbsdk-next",
         {

@@ -1,28 +1,18 @@
 import { NextRequest } from 'next/server';
-import { ApiError, requireEnv } from '@/lib/env';
-import { requireUser } from '@/lib/auth';
 import { corsPreflight, handleError, ok } from '@/lib/http';
-import type { Song } from '@/lib/types';
+import { ytdlLiveSearch, ytdlSearch } from '@/lib/ytdl';
 
-interface YtSearchItem {
-  id?: { videoId?: string };
-  snippet?: {
-    title?: string;
-    channelTitle?: string;
-    thumbnails?: Record<string, { url?: string }>;
-  };
-  liveStreamingDetails?: {
-    activeLiveChatId?: string;
-  };
-}
-
-const ENTITIES: Record<string, string> = {
-  '&amp;': '&', '&lt;': '<', '&gt;': '>', '&quot;': '"', '&#39;': "'", '&#039;': "'", '&nbsp;': ' ',
+const LIVE_QUERIES: Record<string, string[]> = {
+  hindi: ['hindi live radio', 'bollywood live music', 'hindi songs live 24/7'],
+  punjabi: ['punjabi live radio', 'punjabi songs live', 'punjabi music 24/7'],
+  english: ['english live music radio', 'pop live radio', 'english songs live 24/7'],
 };
 
-function decodeHtml(text: string): string {
-  return text.replace(/&(?:amp|lt|gt|quot|#0?39|#039|nbsp);/g, (m) => ENTITIES[m] ?? m);
-}
+const FALLBACK_QUERIES: Record<string, string[]> = {
+  hindi: ['best hindi songs 2025', 'bollywood hits'],
+  punjabi: ['best punjabi songs 2025', 'punjabi hits'],
+  english: ['best pop hits 2025', 'top english songs'],
+};
 
 export async function OPTIONS(): Promise<Response> {
   return corsPreflight();
@@ -30,56 +20,34 @@ export async function OPTIONS(): Promise<Response> {
 
 export async function GET(req: NextRequest): Promise<Response> {
   try {
-    await requireUser(req);
-    const apiKey = requireEnv('YOUTUBE_API_KEY');
     const genre = req.nextUrl.searchParams.get('genre') ?? 'hindi';
+    const liveQueries = LIVE_QUERIES[genre] ?? LIVE_QUERIES.hindi;
+    const fallbackQueries = FALLBACK_QUERIES[genre] ?? FALLBACK_QUERIES.hindi;
 
-    const queries: Record<string, string[]> = {
-      hindi: ['hindi live radio', 'bollywood live music', 'hindi songs live'],
-      punjabi: ['punjabi live radio', 'punjabi songs live', 'punjabi music live'],
-      english: ['english live music', 'pop live radio', 'english songs live'],
-    };
+    const seen = new Set<string>();
+    const all: any[] = [];
 
-    const searchQueries = queries[genre] ?? queries.hindi;
-    const allSongs: Song[] = [];
-
-    for (const q of searchQueries) {
-      const params = new URLSearchParams({
-        part: 'snippet',
-        type: 'video',
-        videoEmbeddable: 'true',
-        eventType: 'live',
-        maxResults: '5',
-        q,
-        key: apiKey,
-      });
-      const res = await fetch(`https://www.googleapis.com/youtube/v3/search?${params.toString()}`);
-      const json = (await res.json()) as { items?: YtSearchItem[]; error?: { message?: string } };
-      if (!res.ok) throw new ApiError(502, json.error?.message ?? 'YouTube search failed', 'youtube_error');
-
-      for (const item of json.items ?? []) {
-        if (!item.id?.videoId) continue;
-        allSongs.push({
-          videoId: item.id.videoId,
-          title: decodeHtml(item.snippet?.title ?? 'Unknown title'),
-          channel: decodeHtml(item.snippet?.channelTitle ?? 'Unknown channel'),
-          thumbnailUrl:
-            item.snippet?.thumbnails?.high?.url ??
-            item.snippet?.thumbnails?.medium?.url ??
-            item.snippet?.thumbnails?.default?.url ??
-            '',
-        });
+    for (const q of liveQueries) {
+      for (const s of await ytdlLiveSearch(q, 8)) {
+        if (!seen.has(s.videoId)) {
+          seen.add(s.videoId);
+          all.push(s);
+        }
       }
     }
 
-    const seen = new Set<string>();
-    const unique = allSongs.filter((s) => {
-      if (seen.has(s.videoId)) return false;
-      seen.add(s.videoId);
-      return true;
-    });
+    if (all.length === 0) {
+      for (const q of fallbackQueries) {
+        for (const s of await ytdlSearch(q, 10)) {
+          if (!seen.has(s.videoId)) {
+            seen.add(s.videoId);
+            all.push(s);
+          }
+        }
+      }
+    }
 
-    return ok({ songs: unique });
+    return ok({ songs: all });
   } catch (err) {
     return handleError(err);
   }
