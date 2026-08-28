@@ -25,15 +25,15 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   return json as T;
 }
 
-export async function loginWithFacebook(accessToken: string): Promise<{ token: string; user: AppUser }> {
-  const res = await fetch(`${API_URL}/api/auth/facebook`, {
+export async function signInWithName(firstName: string, lastName: string): Promise<{ token: string; user: AppUser }> {
+  const res = await fetch(`${API_URL}/api/auth/signup`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ accessToken }),
+    body: JSON.stringify({ firstName, lastName }),
   });
   const json = await res.json().catch(() => ({}));
   if (!res.ok) {
-    throw new Error((json as { error?: string }).error ?? 'Facebook login failed');
+    throw new Error((json as { error?: string }).error ?? 'Login failed');
   }
   const data = json as { token: string; user: AppUser };
   await AsyncStorage.setItem(TOKEN_KEY, data.token);

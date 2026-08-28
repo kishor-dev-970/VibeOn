@@ -25,14 +25,14 @@ export async function GET(
     const { id: friendId } = await params;
     const sb = supabaseAdmin();
 
-    // Get the friend's user_id from their fb_id
+    // Resolve the friend by user id or by their 5-digit user code.
     const { data: friendUser, error: friendErr } = await sb
       .from('users')
       .select('id')
-      .eq('fb_id', friendId)
-      .single();
+      .or(`id.eq.${friendId},code.eq.${friendId}`)
+      .maybeSingle();
     if (friendErr || !friendUser) {
-      throw new ApiError(404, 'Friend not found', 'not_found');
+      throw new ApiError(404, 'User not found', 'not_found');
     }
 
     // Get listening history for last 7 days
@@ -40,7 +40,7 @@ export async function GET(
     const { data: history, error: histErr } = await sb
       .from('listening_history')
       .select('video_id, title, channel, thumbnail_url, played_at')
-      .eq('user_id', friendUser.id)
+      .eq('user_id', friendUser.id as string)
       .gte('played_at', weekAgo)
       .order('played_at', { ascending: false });
     if (histErr) throw new ApiError(502, 'Failed to load friend stats', 'db_error');
@@ -77,11 +77,20 @@ export async function GET(
     // Sort by play count
     songsListened.sort((a, b) => b.playCount - a.playCount);
 
+    const recentPlays = rows.slice(0, 10).map((row) => ({
+      videoId: row.video_id,
+      title: row.title,
+      channel: row.channel,
+      thumbnailUrl: row.thumbnail_url,
+      playedAt: row.played_at,
+    }));
+
     return ok({
       totalSongs: songsListened.length,
       totalPlays: rows.length,
       estimatedMinutes,
       songsListened: songsListened.slice(0, 50),
+      recentPlays,
       weekStart: weekAgo,
     });
   } catch (err) {

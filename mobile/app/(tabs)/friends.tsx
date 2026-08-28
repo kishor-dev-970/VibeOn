@@ -6,7 +6,6 @@ import {
   Image,
   Pressable,
   RefreshControl,
-  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -14,24 +13,32 @@ import {
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../context/AuthContext';
 import * as api from '../../lib/api';
-import { facebookLogin } from '../../lib/facebook';
 import type { FriendActivity } from '../../lib/types';
 import { Colors, BorderRadius, Spacing } from '../../lib/theme';
 import FriendDetailModal from '../../components/FriendDetailModal';
 
 const POLL_INTERVAL_MS = 30000;
 
+const initials = (name: string) =>
+  name
+    .split(' ')
+    .filter(Boolean)
+    .map((part) => part[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
+
 export default function FriendsScreen() {
-  const { token, user, signIn, signOut } = useAuth();
+  const { user, signOut } = useAuth();
   const router = useRouter();
   const [friends, setFriends] = useState<FriendActivity[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedFriend, setSelectedFriend] = useState<FriendActivity | null>(null);
-  const [loginBusy, setLoginBusy] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const load = useCallback(
     async (showSpinner = false) => {
-      if (!token) return;
+      if (!user) return;
       if (showSpinner) setRefreshing(true);
       try {
         const data = await api.fetchFriendsActivity();
@@ -44,10 +51,11 @@ export default function FriendsScreen() {
         }
         Alert.alert('Could not load friends', message);
       } finally {
+        setLoading(false);
         if (showSpinner) setRefreshing(false);
       }
     },
-    [token, signOut]
+    [user, signOut]
   );
 
   useEffect(() => {
@@ -55,19 +63,6 @@ export default function FriendsScreen() {
     const id = setInterval(() => load(), POLL_INTERVAL_MS);
     return () => clearInterval(id);
   }, [load]);
-
-  const handleFacebookLogin = async () => {
-    setLoginBusy(true);
-    try {
-      const accessToken = await facebookLogin();
-      const data = await api.loginWithFacebook(accessToken);
-      signIn(data.token, data.user);
-    } catch (e) {
-      Alert.alert('Login failed', e instanceof Error ? e.message : String(e));
-    } finally {
-      setLoginBusy(false);
-    }
-  };
 
   const handleSignOut = () => {
     Alert.alert('Sign out', 'Are you sure you want to sign out?', [
@@ -107,39 +102,24 @@ export default function FriendsScreen() {
     });
   };
 
-  if (!token) {
-    return (
-      <ScrollView
-        style={[styles.container, { backgroundColor: Colors.bg }]}
-        contentContainerStyle={styles.loginContainer}
-      >
-        <Text style={styles.loginNote}>♫</Text>
-        <Text style={styles.loginTitle}>Connect with friends</Text>
-        <Text style={styles.loginSubtitle}>
-          See what your friends are listening to and share your activity.
-        </Text>
-        {loginBusy ? (
-          <ActivityIndicator size="large" color={Colors.primary} style={{ marginTop: 32 }} />
-        ) : (
-          <Pressable style={styles.fbButton} onPress={handleFacebookLogin}>
-            <Text style={styles.fbIcon}>f</Text>
-            <Text style={styles.fbButtonText}>Continue with Facebook</Text>
-          </Pressable>
-        )}
-        <Text style={styles.loginFootnote}>You can still browse music without logging in.</Text>
-      </ScrollView>
-    );
-  }
+  const renderAvatar = (name: string, avatarUrl: string | null | undefined, size = 'small') => (
+    avatarUrl ? (
+      <Image source={{ uri: avatarUrl }} style={size === 'small' ? styles.avatar : styles.avatarLarge} />
+    ) : (
+      <View style={[size === 'small' ? styles.avatar : styles.avatarLarge, styles.avatarInitials]}>
+        <Text style={styles.avatarInitialsText}>{initials(name)}</Text>
+      </View>
+    )
+  );
 
   return (
     <View style={[styles.container, { backgroundColor: Colors.bg }]}>
       <View style={styles.userRow}>
-        {user?.avatar_url ? (
-          <Image source={{ uri: user.avatar_url }} style={styles.avatar} />
-        ) : (
-          <View style={[styles.avatar, { backgroundColor: Colors.bgCardLight }]} />
-        )}
-        <Text style={[styles.userName, { color: Colors.text }]}>{user?.name ?? 'You'}</Text>
+        {renderAvatar(user?.name ?? 'You', user?.avatar_url)}
+        <View style={{ flex: 1 }}>
+          <Text style={[styles.userName, { color: Colors.text }]}>{user?.name ?? 'You'}</Text>
+          {user?.code ? <Text style={[styles.userCode, { color: Colors.textMuted }]}>Code: {user.code}</Text> : null}
+        </View>
         <Pressable onPress={handleSignOut} hitSlop={10} style={styles.signOut}>
           <Text style={[styles.signOutLabel, { color: Colors.primary }]}>Sign out</Text>
         </Pressable>
@@ -147,65 +127,71 @@ export default function FriendsScreen() {
 
       <Text style={[styles.summary, { color: Colors.textMuted }]}>
         {listeningCount > 0
-          ? `${listeningCount} friend${listeningCount === 1 ? '' : 's'} listening now`
+          ? `${listeningCount} person${listeningCount === 1 ? '' : 's'} listening now`
           : 'Nobody is listening right now'}
       </Text>
 
-      <FlatList
-        data={friends}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <Pressable
-            style={[styles.card, { backgroundColor: Colors.bgCard }]}
-            onPress={() => setSelectedFriend(item)}
-          >
-            <View style={styles.userRow}>
-              {item.avatarUrl ? (
-                <Image source={{ uri: item.avatarUrl }} style={styles.avatar} />
-              ) : (
-                <View style={[styles.avatar, { backgroundColor: Colors.bgCardLight }]} />
-              )}
-              {isOnline(item) && <View style={styles.onlineDot} />}
-              <Text style={[styles.name, { color: Colors.text }]}>{item.name}</Text>
-            </View>
-            {item.nowPlaying ? (
-              <View style={styles.songRow}>
-                {!!item.nowPlaying.thumbnailUrl && (
-                  <Image source={{ uri: item.nowPlaying.thumbnailUrl }} style={styles.thumb} />
-                )}
+      {loading ? (
+        <ActivityIndicator style={{ marginTop: 60 }} color={Colors.primary} />
+      ) : (
+        <FlatList
+          data={friends}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => (
+            <Pressable
+              style={[styles.card, { backgroundColor: Colors.bgCard }]}
+              onPress={() => setSelectedFriend(item)}
+            >
+              <View style={styles.userRow}>
+                {renderAvatar(item.name, item.avatarUrl)}
+                {isOnline(item) && <View style={styles.onlineDot} />}
                 <View style={{ flex: 1 }}>
-                  <Text style={[styles.songTitle, { color: Colors.text }]} numberOfLines={1}>
-                    {item.nowPlaying.title}
-                  </Text>
-                  <Text style={[styles.songChannel, { color: Colors.textMuted }]} numberOfLines={1}>
-                    {item.nowPlaying.channel}
+                  <Text style={[styles.name, { color: Colors.text }]}>{item.name}</Text>
+                  {item.code ? (
+                    <Text style={[styles.userCode, { color: Colors.textMuted }]}>Code: {item.code}</Text>
+                  ) : null}
+                </View>
+              </View>
+              {item.nowPlaying ? (
+                <View style={styles.songRow}>
+                  {!!item.nowPlaying.thumbnailUrl && (
+                    <Image source={{ uri: item.nowPlaying.thumbnailUrl }} style={styles.thumb} />
+                  )}
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.songTitle, { color: Colors.text }]} numberOfLines={1}>
+                      {item.nowPlaying.title}
+                    </Text>
+                    <Text style={[styles.songChannel, { color: Colors.textMuted }]} numberOfLines={1}>
+                      {item.nowPlaying.channel}
+                    </Text>
+                  </View>
+                  <Text
+                    style={[
+                      styles.status,
+                      item.nowPlaying.isPlaying ? styles.live : styles.paused,
+                    ]}
+                  >
+                    {item.nowPlaying.isPlaying ? '● Live' : '❙❙ Paused'}
                   </Text>
                 </View>
-                <Text
-                  style={[
-                    styles.status,
-                    item.nowPlaying.isPlaying ? styles.live : styles.paused,
-                  ]}
-                >
-                  {item.nowPlaying.isPlaying ? '● Live' : '❙❙ Paused'}
-                </Text>
-              </View>
-            ) : (
-              <Text style={[styles.offline, { color: Colors.textSubtle }]}>Not listening</Text>
-            )}
-          </Pressable>
-        )}
-        ListEmptyComponent={<Text style={[styles.empty, { color: Colors.textMuted }]}>No friends using the app yet</Text>}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={() => load(true)} tintColor={Colors.primary} />
-        }
-        contentContainerStyle={{ paddingBottom: 24, paddingHorizontal: Spacing.md, paddingTop: Spacing.sm }}
-      />
+              ) : (
+                <Text style={[styles.offline, { color: Colors.textSubtle }]}>Not listening</Text>
+              )}
+            </Pressable>
+          )}
+          ListEmptyComponent={<Text style={[styles.empty, { color: Colors.textMuted }]}>No one using the app yet</Text>}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={() => load(true)} tintColor={Colors.primary} />
+          }
+          contentContainerStyle={{ paddingBottom: 24, paddingHorizontal: Spacing.md, paddingTop: Spacing.sm }}
+        />
+      )}
 
       {selectedFriend && (
         <FriendDetailModal
           friendId={selectedFriend.id}
           friendName={selectedFriend.name}
+          friendCode={selectedFriend.code}
           darkMode={false}
           onClose={() => setSelectedFriend(null)}
           onPlaySong={handlePlaySong}
@@ -218,56 +204,6 @@ export default function FriendsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  loginContainer: {
-    flexGrow: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 32,
-  },
-  loginNote: {
-    fontSize: 48,
-    color: Colors.primary,
-    marginBottom: 16,
-  },
-  loginTitle: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: Colors.text,
-    textAlign: 'center',
-    marginBottom: 8,
-  },
-  loginSubtitle: {
-    fontSize: 15,
-    color: Colors.textMuted,
-    textAlign: 'center',
-    lineHeight: 22,
-    marginBottom: 40,
-  },
-  fbButton: {
-    backgroundColor: '#1877F2',
-    borderRadius: BorderRadius.md,
-    paddingVertical: 14,
-    paddingHorizontal: 32,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  fbIcon: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: '#fff',
-  },
-  fbButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  loginFootnote: {
-    fontSize: 12,
-    color: Colors.textSubtle,
-    marginTop: 20,
-    textAlign: 'center',
   },
   userRow: {
     flexDirection: 'row',
@@ -282,10 +218,28 @@ const styles = StyleSheet.create({
     height: 36,
     borderRadius: 18,
   },
+  avatarLarge: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+  },
+  avatarInitials: {
+    backgroundColor: Colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarInitialsText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '800',
+  },
   userName: {
     fontSize: 15,
     fontWeight: '700',
-    flex: 1,
+  },
+  userCode: {
+    fontSize: 11,
+    marginTop: 1,
   },
   signOut: {
     padding: 6,

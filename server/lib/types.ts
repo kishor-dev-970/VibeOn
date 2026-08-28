@@ -1,7 +1,9 @@
 export interface AppUser {
   id: string;
-  fb_id: string;
+  first_name: string;
+  last_name: string;
   name: string;
+  code: string;
   avatar_url: string | null;
 }
 
@@ -24,6 +26,7 @@ export interface NowPlaying extends Song {
 export interface FriendActivity {
   id: string;
   name: string;
+  code: string;
   avatarUrl: string | null;
   nowPlaying: NowPlaying | null;
 }

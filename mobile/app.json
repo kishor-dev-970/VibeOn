@@ -2,7 +2,7 @@
   "expo": {
     "name": "Social Music",
     "slug": "social-music",
-    "version": "1.2.1",
+    "version": "1.3.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -58,18 +58,6 @@
         {
           "enableBackgroundPlayback": true,
           "recordAudioAndroid": false
-        }
-      ],
-      [
-        "react-native-fbsdk-next",
-        {
-          "appID": "1475723387788890",
-          "clientToken": "dcc3919c9375feda686693c2859cc3c4",
-          "displayName": "Social Music",
-          "scheme": "fb1475723387788890",
-          "isAutoInitEnabled": true,
-          "autoLogAppEventsEnabled": false,
-          "advertiserIDCollectionEnabled": false
         }
       ],
       "expo-build-properties",

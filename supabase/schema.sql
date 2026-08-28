@@ -1,10 +1,12 @@
 create table if not exists users (
   id uuid primary key default gen_random_uuid(),
-  fb_id text unique not null,
+  first_name text not null,
+  last_name text not null,
   name text not null,
+  code text unique not null,
   avatar_url text,
-  fb_token text,
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  unique (first_name, last_name)
 );
 
 create table if not exists now_playing (

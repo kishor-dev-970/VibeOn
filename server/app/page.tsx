@@ -10,10 +10,10 @@ function envStatus(name: string): boolean {
 }
 
 const endpoints = [
-  ['POST', '/api/auth/facebook', 'Exchange a Facebook access token for an app session'],
+  ['POST', '/api/auth/signup', 'Create or log in with first + last name'],
   ['GET', '/api/me', 'Current user profile'],
   ['GET', '/api/songs/search?q=', 'Search YouTube for songs'],
-  ['GET', '/api/activity', "Friends' now-playing feed"],
+  ['GET', '/api/activity', "Friends' now-playing feed (all users)"],
   ['PUT', '/api/activity', 'Set my now-playing song'],
   ['DELETE', '/api/activity', 'Clear my now-playing status'],
 ];
@@ -22,10 +22,7 @@ export default function Home() {
   const required = [
     'SUPABASE_URL',
     'SUPABASE_SERVICE_ROLE_KEY',
-    'FACEBOOK_APP_ID',
-    'FACEBOOK_APP_SECRET',
     'SESSION_SECRET',
-    'YOUTUBE_API_KEY',
   ];
   const missing = required.filter((name) => !envStatus(name));
 
@@ -33,8 +30,8 @@ export default function Home() {
     <main style={{ maxWidth: 720, margin: '0 auto', padding: '48px 24px', fontFamily: 'monospace' }}>
       <h1 style={{ fontSize: 28 }}>Social Music API</h1>
       <p style={{ color: '#666' }}>
-        Backend for the Social Music mobile app (Expo). The app handles Facebook login,
-        YouTube playback and a live &quot;friends listening&quot; feed through these endpoints.
+        Backend for the Social Music mobile app (Expo). Users sign in with their first + last
+        name, and every user can see what the others are listening to in the live feed.
       </p>
 
       <h2>Status</h2>

@@ -1,7 +1,9 @@
 export interface AppUser {
   id: string;
-  fb_id: string;
+  first_name: string;
+  last_name: string;
   name: string;
+  code: string;
   avatar_url: string | null;
 }
 
@@ -24,20 +26,32 @@ export interface NowPlaying extends Song {
 export interface FriendActivity {
   id: string;
   name: string;
+  code: string;
   avatarUrl: string | null;
   nowPlaying: NowPlaying | null;
   lastActive?: string;
+}
+
+export interface SongStat {
+  videoId: string;
+  title: string;
+  channel: string;
+  thumbnailUrl: string;
+  playCount: number;
+}
+
+export interface RecentPlay {
+  videoId: string;
+  title: string;
+  channel: string;
+  thumbnailUrl: string;
+  playedAt: string;
 }
 
 export interface FriendStats {
   totalSongs: number;
   totalPlays: number;
   estimatedMinutes: number;
-  songsListened: {
-    videoId: string;
-    title: string;
-    channel: string;
-    thumbnailUrl: string;
-    playCount: number;
-  }[];
+  songsListened: SongStat[];
+  recentPlays: RecentPlay[];
 }

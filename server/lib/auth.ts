@@ -32,7 +32,7 @@ export async function requireUser(req: Request): Promise<AppUser> {
 
   const { data, error } = await supabaseAdmin()
     .from('users')
-    .select('id, fb_id, name, avatar_url')
+    .select('id, first_name, last_name, name, code, avatar_url')
     .eq('id', userId)
     .single();
   if (error || !data) throw new ApiError(401, 'User not found', 'user_not_found');

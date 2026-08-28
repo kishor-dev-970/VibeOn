@@ -34,11 +34,5 @@ services:
         value: https://treahljceqcabceskyjq.supabase.co
       - key: SUPABASE_SERVICE_ROLE_KEY
         value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRyZWFobGpjZXFjYWJjZXNreWpxIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4Nzc2NzEzOCwiZXhwIjoyMTAzMzQzMTM4fQ.mRU_DEbfUvzV1O9oO-l2mRoS52DmtPhNRMY95-WbR0c
-      - key: FACEBOOK_APP_ID
-        value: "1475723387788890"
-      - key: FACEBOOK_APP_SECRET
-        value: b3b71aa649619d4040559d3f637f53d8
       - key: SESSION_SECRET
         value: de176cb7be463b5815b673b52a7534f0d72187db58edbd40e3ecde7ed9e555ab
-      - key: YOUTUBE_API_KEY
-        value: AIzaSyADLp8uoV40OTEwwGHEw7SyYgVM8KHNtvM

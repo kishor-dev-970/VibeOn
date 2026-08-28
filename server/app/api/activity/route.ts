@@ -1,6 +1,5 @@
 import { NextRequest } from 'next/server';
 import { ApiError } from '@/lib/env';
-import { getFbFriends, mapFbUser } from '@/lib/facebook';
 import { requireUser } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
 import { corsPreflight, handleError, ok } from '@/lib/http';
@@ -9,13 +8,13 @@ import type { FriendActivity, NowPlaying, Song } from '@/lib/types';
 const ACTIVITY_TTL_MS = 10 * 60 * 1000;
 
 interface NowPlayingRow {
+  user_id: string;
   video_id: string;
   title: string;
   channel: string;
   thumbnail_url: string;
   is_playing: boolean;
   updated_at: string;
-  users?: { fb_id: string };
 }
 
 export async function OPTIONS(): Promise<Response> {
@@ -27,35 +26,27 @@ export async function GET(req: NextRequest): Promise<Response> {
     const user = await requireUser(req);
     const sb = supabaseAdmin();
 
-    const { data: meRow, error: meErr } = await sb
+    const { data: users, error: usersErr } = await sb
       .from('users')
-      .select('fb_token')
-      .eq('id', user.id)
-      .single();
-    if (meErr || !meRow?.fb_token) {
-      throw new ApiError(401, 'Facebook session expired, please log in again', 'fb_token_missing');
-    }
+      .select('id, name, code, avatar_url')
+      .neq('id', user.id)
+      .order('name');
+    if (usersErr) throw new ApiError(502, 'Failed to load users', 'db_error');
 
-    const friends = await getFbFriends(meRow.fb_token);
-    const friendFbIds = friends.map((f) => f.id);
-
-    const byFbId = new Map<string, NowPlaying>();
-    if (friendFbIds.length > 0) {
+    const userIds = (users ?? []).map((u) => u.id);
+    const byUserId = new Map<string, NowPlaying>();
+    if (userIds.length > 0) {
       const cutoff = new Date(Date.now() - ACTIVITY_TTL_MS).toISOString();
       const { data: rows, error } = await sb
         .from('now_playing')
-        .select(
-          'video_id, title, channel, thumbnail_url, is_playing, updated_at, users!inner(fb_id)'
-        )
-        .in('users.fb_id', friendFbIds)
+        .select('user_id, video_id, title, channel, thumbnail_url, is_playing, updated_at')
+        .in('user_id', userIds)
         .gte('updated_at', cutoff);
 
       if (error) throw new ApiError(502, 'Failed to load activity', 'db_error');
-
-      for (const row of rows as unknown as NowPlayingRow[]) {
-        const fbId = row.users?.fb_id;
-        if (!fbId || !row.video_id) continue;
-        byFbId.set(fbId, {
+      for (const row of (rows as unknown as NowPlayingRow[]) ?? []) {
+        if (!row.video_id) continue;
+        byUserId.set(row.user_id, {
           videoId: row.video_id,
           title: row.title,
           channel: row.channel,
@@ -66,15 +57,13 @@ export async function GET(req: NextRequest): Promise<Response> {
       }
     }
 
-    const activities: FriendActivity[] = friends.map((f) => {
-      const profile = mapFbUser(f);
-      return {
-        id: profile.fbId,
-        name: profile.name,
-        avatarUrl: profile.avatarUrl,
-        nowPlaying: byFbId.get(profile.fbId) ?? null,
-      };
-    });
+    const activities: FriendActivity[] = (users ?? []).map((u) => ({
+      id: u.id,
+      name: u.name,
+      code: u.code,
+      avatarUrl: u.avatar_url,
+      nowPlaying: byUserId.get(u.id) ?? null,
+    }));
     return ok({ friends: activities });
   } catch (err) {
     return handleError(err);
