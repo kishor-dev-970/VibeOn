@@ -6,7 +6,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import YoutubePlayer from 'react-native-youtube-iframe';
+import { AdFreeVideoPlayer } from '../../components/AdFreeVideoPlayer';
 import { useRouter } from 'expo-router';
 import MediaTabs from '../../components/MediaTabs';
 import AudioSeekBar from '../../components/AudioSeekBar';
@@ -126,7 +126,7 @@ export default function LiveScreen() {
           </View>
 
           {showVideo ? (
-            <YoutubePlayer
+            <AdFreeVideoPlayer
               ref={youtubeRef}
               height={200}
               videoId={currentSong.videoId}

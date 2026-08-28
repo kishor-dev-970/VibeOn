@@ -84,3 +84,7 @@ export function fetchLiveStreams(genre: string): Promise<{ songs: Song[] }> {
 export function fetchAudioStream(videoId: string): Promise<{ audioUrl: string }> {
   return request(`/api/songs/audio/stream?videoId=${encodeURIComponent(videoId)}`);
 }
+
+export function fetchVideoStream(videoId: string): Promise<{ videoUrl: string }> {
+  return request(`/api/songs/video/stream?videoId=${encodeURIComponent(videoId)}`);
+}

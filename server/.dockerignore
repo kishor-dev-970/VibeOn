@@ -1,0 +1,12 @@
+node_modules
+.next
+out
+build
+.env*
+*.log
+*.tsbuildinfo
+README.md
+server-dev.log
+Dockerfile
+render.yaml
+.dockerignore

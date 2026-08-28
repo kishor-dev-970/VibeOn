@@ -1,0 +1,47 @@
+# Render Blueprint for the Social Music backend
+# Deploy: push this repo to GitHub, then in Render dashboard: Blueprint -> New Blueprint -> choose the repo.
+# Then in the service "Environment" tab, paste the real values for the sync:false secrets below
+# (copy from server/.env.local — never commit those to git).
+#
+# Persistent disk note: Render's Free plan does NOT support disks. The default VIDEO_CACHE_DIR
+# (/var/cache/social-music) still works on a Free instance (cached videos live on the container's
+# writable layer and are lost when the service restarts). Upgrade to at least Starter, then
+# uncomment the `disk:` block to keep the cache across restarts.
+
+services:
+  - type: web
+    name: social-music-server
+    runtime: docker
+    repo: https://github.com/CHANGE_ME/CHANGE_ME.git
+    rootDir: server
+    dockerfilePath: ./Dockerfile
+    plan: free
+    region: oregon
+    healthCheckPath: /api/health
+    autoDeploy: true
+    # disk:
+    #   name: media-cache
+    #   mountPath: /var/cache/social-music
+    #   sizeGB: 10
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PYTHON_PATH
+        value: python3
+      - key: FFMPEG_PATH
+        value: /usr/bin
+      - key: VIDEO_CACHE_DIR
+        value: /var/cache/social-music
+      # --- secrets: keep sync:false, paste real values in the Render dashboard ---
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: FACEBOOK_APP_ID
+        sync: false
+      - key: FACEBOOK_APP_SECRET
+        sync: false
+      - key: SESSION_SECRET
+        sync: false
+      - key: YOUTUBE_API_KEY
+        sync: false

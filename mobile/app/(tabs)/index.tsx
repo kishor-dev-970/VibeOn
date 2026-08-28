@@ -10,7 +10,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import YoutubePlayer from 'react-native-youtube-iframe';
+import { AdFreeVideoPlayer } from '../../components/AdFreeVideoPlayer';
 import { useRouter } from 'expo-router';
 import MediaTabs from '../../components/MediaTabs';
 import AudioSeekBar from '../../components/AudioSeekBar';
@@ -162,7 +162,7 @@ export default function HomeScreen() {
           </View>
 
           {showVideo ? (
-            <YoutubePlayer
+            <AdFreeVideoPlayer
               ref={youtubeRef}
               height={200}
               videoId={currentSong.videoId}

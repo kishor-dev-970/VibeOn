@@ -1,0 +1,73 @@
+env: load .env
+env: export EXPO_PUBLIC_API_URL EXPO_PUBLIC_FACEBOOK_APP_ID
+Starting project at D:\MyopenCode\mobile
+Starting Metro Bundler
+
+› Opening exp://192.168.1.5:8081 on pixel35
+Waiting on http://localhost:8081
+
+An update for expo is available: 57.0.16 → ~57.0.17
+6 other packages may need updating. Run npx expo install --check for details.
+Logs for your project will appear below.
+Android Bundled 91506ms node_modules\expo-router\entry.js (1418 modules)
+Android Bundled 1682ms node_modules\expo-router\entry.js (1 module)
+Android Bundled 747ms node_modules\expo-router\entry.js (1 module)
+ WARN  [DBG] handlePlay 5GCfYLguTIs showVideo=true
+ WARN  [DBG] AFP fetch videoId=5GCfYLguTIs
+ WARN  [DBG] video-player mounted videoId=5GCfYLguTIs
+ WARN  [DBG] AFP fetch videoId=5GCfYLguTIs
+ WARN  [DBG] AFP fetch videoId=5GCfYLguTIs
+ WARN  [DBG] handlePlay 5GCfYLguTIs showVideo=true
+ WARN  [DBG] AFP fetch videoId=5GCfYLguTIs
+ WARN  [DBG] video-player mounted videoId=5GCfYLguTIs
+ WARN  [DBG] AFP fetch videoId=5GCfYLguTIs
+ WARN  [DBG] AFP fetch videoId=5GCfYLguTIs
+ WARN  [DBG] handlePlay 5GCfYLguTIs showVideo=true
+ WARN  [DBG] AFP fetch videoId=5GCfYLguTIs
+ WARN  [DBG] video-player mounted videoId=5GCfYLguTIs
+ WARN  [DBG] AFP fetch videoId=5GCfYLguTIs
+ WARN  [DBG] AFP fetch videoId=5GCfYLguTIs
+ WARN  [DBG] AFP playToEnd
+ WARN  [DBG] video-player onChangeState=ended
+ WARN  [DBG] handlePlay 5GCfYLguTIs showVideo=true
+ WARN  [DBG] AFP fetch videoId=5GCfYLguTIs
+ WARN  [DBG] video-player mounted videoId=5GCfYLguTIs
+ WARN  [DBG] AFP fetch videoId=5GCfYLguTIs
+ WARN  [DBG] AFP fetch videoId=5GCfYLguTIs
+ WARN  [DBG] AFP playToEnd
+ WARN  [DBG] video-player onChangeState=ended
+Android Bundled 291ms node_modules\expo-router\entry.js (1 module)
+ ERROR  Failed to start the expo-audio playback service.. Make sure that the expo-audio config plugin is properly configured with 'enableBackgroundPlayback: true' to avoid issues with lock screen controls and background audio playback. 
+
+Code: metroServerLogs.native.ts
+[0m [90m 103 |[39m }
+ [90m 104 |[39m
+[31m[1m>[22m[39m[90m 105 |[39m [36mclass[39m [33mNamelessError[39m [36mextends[39m [33mError[39m {
+ [90m     |[39m [31m[1m^[22m[39m
+ [90m 106 |[39m   name [33m=[39m [32m''[39m[33m;[39m
+ [90m 107 |[39m }
+ [90m 108 |[39m [36mfunction[39m captureCurrentStack() {[0m
+Call Stack
+  apply (<native>)
+  NamelessError (node_modules\expo-router\node_modules\@expo\metro-runtime\src\metroServerLogs.native.ts:105)
+  captureCurrentStack (node_modules\expo-router\node_modules\@expo\metro-runtime\src\metroServerLogs.native.ts:110:27)
+  HMRClient.log (node_modules\expo-router\node_modules\@expo\metro-runtime\src\metroServerLogs.native.ts:42:79)
+  console.level (node_modules\react-native\Libraries\Core\setUpDeveloperTools.js:41:24)
+  NativeJSLogger.addListener$argument_1 (node_modules\expo-modules-core\src\sweet\setUpJsLogger.fx.ts:51:24)
+ ERROR  Failed to activate lock screen controls - service binding failed. Make sure that the expo-audio config plugin is properly configured with 'enableBackgroundPlayback: true' to avoid issues with lock screen controls and background audio playback. 
+
+Code: metroServerLogs.native.ts
+[0m [90m 103 |[39m }
+ [90m 104 |[39m
+[31m[1m>[22m[39m[90m 105 |[39m [36mclass[39m [33mNamelessError[39m [36mextends[39m [33mError[39m {
+ [90m     |[39m [31m[1m^[22m[39m
+ [90m 106 |[39m   name [33m=[39m [32m''[39m[33m;[39m
+ [90m 107 |[39m }
+ [90m 108 |[39m [36mfunction[39m captureCurrentStack() {[0m
+Call Stack
+  apply (<native>)
+  NamelessError (node_modules\expo-router\node_modules\@expo\metro-runtime\src\metroServerLogs.native.ts:105)
+  captureCurrentStack (node_modules\expo-router\node_modules\@expo\metro-runtime\src\metroServerLogs.native.ts:110:27)
+  HMRClient.log (node_modules\expo-router\node_modules\@expo\metro-runtime\src\metroServerLogs.native.ts:42:79)
+  console.level (node_modules\react-native\Libraries\Core\setUpDeveloperTools.js:41:24)
+  NativeJSLogger.addListener$argument_1 (node_modules\expo-modules-core\src\sweet\setUpJsLogger.fx.ts:51:24)

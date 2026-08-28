@@ -72,7 +72,8 @@
           "advertiserIDCollectionEnabled": false
         }
       ],
-      "expo-build-properties"
+      "expo-build-properties",
+      "expo-video"
     ],
     "extra": {
       "router": {},

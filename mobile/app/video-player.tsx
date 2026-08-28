@@ -7,7 +7,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import YoutubePlayer from 'react-native-youtube-iframe';
+import { AdFreeVideoPlayer } from '../components/AdFreeVideoPlayer';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as api from '../lib/api';
@@ -114,7 +114,7 @@ export default function VideoPlayerScreen() {
       </View>
 
       <View style={styles.videoWrap}>
-        <YoutubePlayer
+        <AdFreeVideoPlayer
           ref={youtubeRef}
           height={220}
           videoId={song.videoId}

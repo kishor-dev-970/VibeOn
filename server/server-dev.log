@@ -1,0 +1,467 @@
+
+> server@0.1.0 dev
+> next dev -H 0.0.0.0
+
+▲ Next.js 16.3.3 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://0.0.0.0:3000
+- Environments: .env.local
+✓ Ready in 6.1s
+✓ Running next.config.ts took 564ms
+
+ GET /api/songs/trending 200 in 7.3s (next.js: 1104ms, application-code: 6.2s)
+ GET /api/songs/trending 200 in 5.0s (next.js: 8ms, application-code: 5.0s)
+ GET /api/songs/audio/stream?videoId=CBFGDxxfUs8 200 in 6.5s (next.js: 117ms, application-code: 6.4s)
+ GET /api/songs/trending 200 in 10.5s (next.js: 5ms, application-code: 10.5s)
+ GET /api/songs/audio/stream?videoId=2vKMY75kvjI 200 in 5.3s (next.js: 11ms, application-code: 5.3s)
+ GET /api/songs/trending 200 in 7.9s (next.js: 7ms, application-code: 7.9s)
+ GET /api/songs/audio/stream?videoId=i1o1p_DD6TU 200 in 5.1s (next.js: 7ms, application-code: 5.1s)
+ GET /api/songs/trending 200 in 7.6s (next.js: 16ms, application-code: 7.6s)
+ GET /api/songs/audio/stream?videoId=TLLWoE0K114 200 in 3.3s (next.js: 5ms, application-code: 3.3s)
+ POST /api/auth/facebook 200 in 4.0s (next.js: 967ms, application-code: 3.0s)
+ GET /api/activity 200 in 2.8s (next.js: 129ms, application-code: 2.7s)
+ GET /api/friends/4088741228087007/stats 200 in 6.0s (next.js: 4.9s, application-code: 1077ms)
+ GET /api/activity 200 in 1236ms (next.js: 13ms, application-code: 1223ms)
+ GET /api/songs/live?genre=hindi 200 in 15.9s (next.js: 211ms, application-code: 15.7s)
+ GET /api/songs/live?genre=english 200 in 13.5s (next.js: 8ms, application-code: 13.5s)
+ GET /api/songs/live?genre=hindi 200 in 9.1s (next.js: 6ms, application-code: 9.1s)
+ GET /api/activity 200 in 2.4s (next.js: 5ms, application-code: 2.4s)
+ GET /api/activity 200 in 975ms (next.js: 7ms, application-code: 968ms)
+ GET /api/activity 200 in 1413ms (next.js: 26ms, application-code: 1388ms)
+ GET /api/activity 200 in 1063ms (next.js: 5ms, application-code: 1058ms)
+ GET /api/activity 200 in 1032ms (next.js: 15ms, application-code: 1017ms)
+ GET /api/activity 200 in 1082ms (next.js: 15ms, application-code: 1066ms)
+ GET /api/activity 200 in 920ms (next.js: 12ms, application-code: 909ms)
+ GET /api/activity 200 in 1549ms (next.js: 5ms, application-code: 1544ms)
+ GET /api/activity 200 in 1358ms (next.js: 13ms, application-code: 1345ms)
+ GET /api/activity 200 in 994ms (next.js: 6ms, application-code: 988ms)
+ GET /api/activity 200 in 1034ms (next.js: 16ms, application-code: 1018ms)
+ GET /api/activity 200 in 1037ms (next.js: 13ms, application-code: 1024ms)
+ GET /api/activity 200 in 1116ms (next.js: 13ms, application-code: 1103ms)
+ GET /api/activity 200 in 1182ms (next.js: 11ms, application-code: 1171ms)
+ GET /api/activity 200 in 1296ms (next.js: 11ms, application-code: 1286ms)
+ GET /api/activity 200 in 1202ms (next.js: 6ms, application-code: 1196ms)
+ GET /api/activity 200 in 1142ms (next.js: 19ms, application-code: 1123ms)
+ GET /api/activity 200 in 1162ms (next.js: 15ms, application-code: 1147ms)
+ GET /api/activity 200 in 1224ms (next.js: 15ms, application-code: 1209ms)
+ GET /api/activity 200 in 2.4s (next.js: 32ms, application-code: 2.4s)
+ GET /api/songs/trending 200 in 7.3s (next.js: 58ms, application-code: 7.2s)
+ GET /api/activity 200 in 1393ms (next.js: 31ms, application-code: 1362ms)
+ GET /api/songs/live?genre=hindi 200 in 7.4s (next.js: 16ms, application-code: 7.3s)
+ GET /api/activity 200 in 1191ms (next.js: 7ms, application-code: 1185ms)
+ POST /api/auth/facebook 200 in 1281ms (next.js: 15ms, application-code: 1266ms)
+ GET /api/activity 200 in 971ms (next.js: 14ms, application-code: 957ms)
+ GET /api/friends/4088741228087007/stats 200 in 433ms (next.js: 52ms, application-code: 382ms)
+ GET /api/songs/trending 200 in 5.6s (next.js: 14ms, application-code: 5.6s)
+ PUT /api/activity 200 in 414ms (next.js: 27ms, application-code: 388ms)
+ GET /api/activity 200 in 972ms (next.js: 5ms, application-code: 967ms)
+ GET /api/songs/audio/stream?videoId=kIECF9NMxo4 200 in 3.3s (next.js: 19ms, application-code: 3.3s)
+ GET /api/songs/trending 200 in 4.7s (next.js: 7ms, application-code: 4.7s)
+ GET /api/activity 200 in 2.4s (next.js: 14ms, application-code: 2.4s)
+ PUT /api/activity 200 in 317ms (next.js: 33ms, application-code: 284ms)
+ PUT /api/activity 200 in 442ms (next.js: 46ms, application-code: 397ms)
+ PUT /api/activity 200 in 577ms (next.js: 56ms, application-code: 521ms)
+ GET /api/songs/audio/stream?videoId=H5v3kku4y6Q 200 in 3.3s (next.js: 8ms, application-code: 3.3s)
+ GET /api/activity 200 in 917ms (next.js: 7ms, application-code: 910ms)
+ GET /api/songs/trending 200 in 4.5s (next.js: 7ms, application-code: 4.5s)
+ GET /api/activity 200 in 994ms (next.js: 7ms, application-code: 987ms)
+ PUT /api/activity 200 in 295ms (next.js: 10ms, application-code: 286ms)
+ GET /api/activity 200 in 1105ms (next.js: 12ms, application-code: 1093ms)
+ DELETE /api/activity 200 in 614ms (next.js: 12ms, application-code: 602ms)
+ PUT /api/activity 200 in 610ms (next.js: 8ms, application-code: 602ms)
+ GET /api/songs/audio/stream?videoId=Cs5f2w37zxE 200 in 3.1s (next.js: 13ms, application-code: 3.1s)
+ GET /api/songs/trending 200 in 4.7s (next.js: 18ms, application-code: 4.7s)
+ GET /api/activity 200 in 1007ms (next.js: 6ms, application-code: 1001ms)
+ GET /api/activity 200 in 1070ms (next.js: 5ms, application-code: 1064ms)
+ GET /api/activity 200 in 970ms (next.js: 12ms, application-code: 957ms)
+ PUT /api/activity 200 in 276ms (next.js: 6ms, application-code: 270ms)
+ DELETE /api/activity 200 in 231ms (next.js: 11ms, application-code: 220ms)
+ PUT /api/activity 200 in 410ms (next.js: 4ms, application-code: 406ms)
+ GET /api/songs/audio/stream?videoId=Cs5f2w37zxE 200 in 3.6s (next.js: 11ms, application-code: 3.6s)
+ GET /api/activity 200 in 1073ms (next.js: 11ms, application-code: 1061ms)
+ GET /api/songs/live?genre=punjabi 200 in 6.4s (next.js: 7ms, application-code: 6.4s)
+ GET /api/activity 200 in 991ms (next.js: 6ms, application-code: 985ms)
+ PUT /api/activity 200 in 401ms (next.js: 46ms, application-code: 354ms)
+ GET /api/songs/audio/stream?videoId=lRkOBsOv5Ec 200 in 3.1s (next.js: 7ms, application-code: 3.1s)
+ GET /api/activity 200 in 1048ms (next.js: 3ms, application-code: 1044ms)
+ DELETE /api/activity 200 in 319ms (next.js: 4ms, application-code: 315ms)
+ GET /api/activity 200 in 1229ms (next.js: 11ms, application-code: 1218ms)
+ PUT /api/activity 200 in 362ms (next.js: 12ms, application-code: 350ms)
+ GET /api/songs/trending 200 in 4.0s (next.js: 5ms, application-code: 4.0s)
+ PUT /api/activity 200 in 455ms (next.js: 47ms, application-code: 409ms)
+ PUT /api/activity 200 in 503ms (next.js: 32ms, application-code: 471ms)
+ PUT /api/activity 200 in 514ms (next.js: 4ms, application-code: 510ms)
+ GET /api/songs/audio/stream?videoId=-YlmnPh-6rE 200 in 3.7s (next.js: 6ms, application-code: 3.7s)
+ GET /api/songs/trending 200 in 4.6s (next.js: 16ms, application-code: 4.6s)
+ GET /api/activity 200 in 884ms (next.js: 10ms, application-code: 874ms)
+ GET /api/activity 200 in 1010ms (next.js: 12ms, application-code: 997ms)
+ GET /api/activity 200 in 1275ms (next.js: 4ms, application-code: 1271ms)
+ GET /api/activity 200 in 950ms (next.js: 11ms, application-code: 939ms)
+ PUT /api/activity 200 in 464ms (next.js: 13ms, application-code: 451ms)
+ DELETE /api/activity 200 in 321ms (next.js: 8ms, application-code: 313ms)
+ GET /api/activity 200 in 1262ms (next.js: 8ms, application-code: 1254ms)
+ GET /api/songs/live?genre=punjabi 200 in 10.4s (next.js: 9ms, application-code: 10.4s)
+ GET /api/activity 200 in 3.9s (next.js: 3ms, application-code: 3.9s)
+ GET /api/activity 200 in 1509ms (next.js: 3ms, application-code: 1505ms)
+ GET /api/songs/trending 200 in 6.3s (next.js: 7ms, application-code: 6.3s)
+ GET /api/songs/live?genre=punjabi 200 in 6.6s (next.js: 8ms, application-code: 6.6s)
+ GET /api/songs/live?genre=english 200 in 7.2s (next.js: 4ms, application-code: 7.2s)
+ GET /api/activity 200 in 1031ms (next.js: 3ms, application-code: 1028ms)
+ GET /api/activity 200 in 964ms (next.js: 5ms, application-code: 959ms)
+ GET /api/activity 200 in 1020ms (next.js: 5ms, application-code: 1015ms)
+ GET /api/songs/live?genre=english 200 in 6.9s (next.js: 5ms, application-code: 6.9s)
+ GET /api/activity 200 in 1036ms (next.js: 11ms, application-code: 1026ms)
+ GET /api/activity 200 in 1102ms (next.js: 5ms, application-code: 1097ms)
+ GET /api/activity 200 in 3.1s (next.js: 16ms, application-code: 3.0s)
+ PUT /api/activity 200 in 435ms (next.js: 6ms, application-code: 430ms)
+ GET /api/songs/audio/stream?videoId=3MOrgUjiigE 200 in 3.3s (next.js: 17ms, application-code: 3.3s)
+ GET /api/songs/live?genre=english 200 in 6.9s (next.js: 20ms, application-code: 6.9s)
+ GET /api/songs/trending 200 in 4.5s (next.js: 3ms, application-code: 4.5s)
+ PUT /api/activity 200 in 313ms (next.js: 4ms, application-code: 309ms)
+ GET /api/songs/trending 200 in 4.9s (next.js: 14ms, application-code: 4.9s)
+ GET /api/activity 200 in 947ms (next.js: 3ms, application-code: 943ms)
+ GET /api/activity 200 in 891ms (next.js: 3ms, application-code: 888ms)
+ GET /api/songs/trending 200 in 5.3s (next.js: 14ms, application-code: 5.3s)
+ GET /api/songs/live?genre=hindi 200 in 8.0s (next.js: 6ms, application-code: 8.0s)
+ GET /api/songs/live?genre=english 200 in 6.8s (next.js: 5ms, application-code: 6.8s)
+ GET /api/songs/live?genre=punjabi 200 in 7.1s (next.js: 4ms, application-code: 7.1s)
+ GET /api/songs/live?genre=hindi 200 in 7.1s (next.js: 4ms, application-code: 7.1s)
+ GET /api/songs/trending 200 in 4.3s (next.js: 7ms, application-code: 4.3s)
+ GET /api/activity 200 in 1259ms (next.js: 202ms, application-code: 1058ms)
+ GET /api/songs/video/stream?videoId=5GCfYLguTIs 200 in 10.3s (next.js: 1276ms, application-code: 9.0s)
+ GET /api/activity 200 in 1182ms (next.js: 4ms, application-code: 1178ms)
+ GET /api/songs/video/stream?videoId=5GCfYLguTIs 200 in 7.6s (next.js: 11ms, application-code: 7.6s)
+ GET /api/songs/video/stream?videoId=5GCfYLguTIs&stream=1 200 in 6.5s (next.js: 5ms, application-code: 6.5s)
+ GET /api/songs/video/stream?videoId=5GCfYLguTIs&stream=1 206 in 18ms (next.js: 4ms, application-code: 13ms)
+ GET /api/activity 200 in 1024ms (next.js: 4ms, application-code: 1020ms)
+ GET /api/activity 200 in 2.5s (next.js: 4ms, application-code: 2.5s)
+ GET /api/activity 200 in 1857ms (next.js: 5ms, application-code: 1852ms)
+ GET /api/activity 200 in 1286ms (next.js: 3ms, application-code: 1283ms)
+ GET /api/activity 200 in 952ms (next.js: 4ms, application-code: 948ms)
+ GET /api/activity 200 in 2.6s (next.js: 7ms, application-code: 2.6s)
+ GET /api/activity 200 in 2.6s (next.js: 16ms, application-code: 2.6s)
+ GET /api/activity 200 in 8.8s (next.js: 272ms, application-code: 8.5s)
+ GET /api/activity 200 in 5.9s (next.js: 4.6s, application-code: 1277ms)
+ GET /api/activity 200 in 1662ms (next.js: 134ms, application-code: 1528ms)
+ GET /api/activity 200 in 4.3s (next.js: 797ms, application-code: 3.5s)
+ GET /api/activity 200 in 2.4s (next.js: 219ms, application-code: 2.2s)
+ GET /api/activity 200 in 2.1s (next.js: 77ms, application-code: 2.0s)
+ GET /api/activity 200 in 2.7s (next.js: 419ms, application-code: 2.2s)
+ GET /api/songs/trending 200 in 7.7s (next.js: 1041ms, application-code: 6.7s)
+ GET /api/songs/trending 200 in 9.6s (next.js: 125ms, application-code: 9.5s)
+ GET /api/songs/trending 200 in 6.2s (next.js: 131ms, application-code: 6.1s)
+ GET /api/songs/audio/stream?videoId=5GCfYLguTIs 200 in 7.6s (next.js: 785ms, application-code: 6.8s)
+ GET /api/songs/trending 200 in 9.3s (next.js: 21ms, application-code: 9.3s)
+ GET /api/songs/video/stream?videoId=5GCfYLguTIs 200 in 12.6s (next.js: 76ms, application-code: 12.6s)
+ GET /api/songs/video/stream?videoId=5GCfYLguTIs 200 in 11.4s (next.js: 69ms, application-code: 11.4s)
+ GET /api/songs/trending 200 in 5.4s (next.js: 9ms, application-code: 5.4s)
+ GET /api/songs/trending 200 in 6.5s (next.js: 69ms, application-code: 6.5s)
+ GET /api/songs/video/stream?videoId=5GCfYLguTIs 200 in 8.5s (next.js: 114ms, application-code: 8.4s)
+ GET /api/songs/video/stream?videoId=5GCfYLguTIs 200 in 9.0s (next.js: 137ms, application-code: 8.8s)
+ GET /api/songs/trending 200 in 7.5s (next.js: 36ms, application-code: 7.5s)
+ GET /api/songs/video/stream?videoId=5GCfYLguTIs 200 in 10.5s (next.js: 73ms, application-code: 10.5s)
+ GET /api/songs/video/stream?videoId=5GCfYLguTIs 200 in 11.6s (next.js: 17ms, application-code: 11.5s)
+ GET /api/songs/trending 200 in 8.6s (next.js: 145ms, application-code: 8.5s)
+ GET /api/songs/video/stream?videoId=5GCfYLguTIs 200 in 10.5s (next.js: 534ms, application-code: 9.9s)
+ GET /api/songs/video/stream?videoId=5GCfYLguTIs 200 in 10.4s (next.js: 11ms, application-code: 10.4s)
+ GET /api/songs/audio/stream?videoId=-YlmnPh-6rE 200 in 6.2s (next.js: 267ms, application-code: 6.0s)
+ GET /api/songs/trending 200 in 7.7s (next.js: 488ms, application-code: 7.2s)
+ GET /api/songs/video/stream?videoId=-YlmnPh-6rE 200 in 18.7s (next.js: 525ms, application-code: 18.2s)
+ GET /api/songs/video/stream?videoId=-YlmnPh-6rE 502 in 19.4s (next.js: 85ms, application-code: 19.3s)
+ GET /api/songs/trending 200 in 5.4s (next.js: 137ms, application-code: 5.3s)
+ GET /api/songs/trending 200 in 6.0s (next.js: 20ms, application-code: 6.0s)
+ GET /api/songs/audio/stream?videoId=hhXDoofch9I 200 in 5.7s (next.js: 119ms, application-code: 5.6s)
+ GET /api/songs/trending 200 in 6.6s (next.js: 21ms, application-code: 6.6s)
+ GET /api/songs/video/stream?videoId=hhXDoofch9I 200 in 13.9s (next.js: 15ms, application-code: 13.9s)
+ GET /api/songs/video/stream?videoId=hhXDoofch9I 502 in 15.2s (next.js: 56ms, application-code: 15.1s)
+ GET /api/songs/live?genre=hindi 200 in 26.9s (next.js: 1729ms, application-code: 25.1s)
+ GET /api/songs/trending 200 in 9.4s (next.js: 658ms, application-code: 8.7s)
+ GET /api/songs/video/stream?videoId=hhXDoofch9I 200 in 10.9s (next.js: 171ms, application-code: 10.7s)
+ GET /api/songs/video/stream?videoId=hhXDoofch9I 200 in 11.3s (next.js: 610ms, application-code: 10.7s)
+ GET /api/songs/video/stream?videoId=hhXDoofch9I 200 in 12.5s (next.js: 537ms, application-code: 11.9s)
+ GET /api/songs/trending 200 in 6.4s (next.js: 173ms, application-code: 6.2s)
+ GET /api/songs/video/stream?videoId=hhXDoofch9I 200 in 7.8s (next.js: 407ms, application-code: 7.4s)
+ GET /api/songs/video/stream?videoId=hhXDoofch9I 200 in 8.1s (next.js: 387ms, application-code: 7.8s)
+ GET /api/songs/video/stream?videoId=hhXDoofch9I 200 in 8.2s (next.js: 317ms, application-code: 7.9s)
+ GET /api/songs/trending 200 in 4.7s (next.js: 8ms, application-code: 4.7s)
+ GET /api/songs/audio/stream?videoId=5GCfYLguTIs 200 in 4.6s (next.js: 146ms, application-code: 4.4s)
+ GET /api/songs/trending 200 in 6.9s (next.js: 177ms, application-code: 6.7s)
+ GET /api/songs/video/stream?videoId=5GCfYLguTIs 502 in 13.6s (next.js: 201ms, application-code: 13.4s)
+ GET /api/songs/video/stream?videoId=5GCfYLguTIs 200 in 13.7s (next.js: 49ms, application-code: 13.6s)
+ GET /api/songs/video/stream?videoId=5GCfYLguTIs 502 in 12.3s (next.js: 5ms, application-code: 12.3s)
+ GET /api/songs/trending 200 in 6.8s (next.js: 23ms, application-code: 6.8s)
+ GET /api/songs/video/stream?videoId=5GCfYLguTIs 200 in 8.1s (next.js: 90ms, application-code: 8.0s)
+ GET /api/songs/video/stream?videoId=5GCfYLguTIs 200 in 8.6s (next.js: 275ms, application-code: 8.3s)
+ GET /api/songs/video/stream?videoId=5GCfYLguTIs 200 in 10.2s (next.js: 344ms, application-code: 9.9s)
+ GET /api/songs/video/stream?videoId=5GCfYLguTIs 200 in 5.9s (next.js: 5ms, application-code: 5.8s)
+ GET /api/songs/trending 200 in 5.5s (next.js: 86ms, application-code: 5.4s)
+ GET /api/songs/video/stream?videoId=5GCfYLguTIs 200 in 6.8s (next.js: 181ms, application-code: 6.6s)
+ GET /api/songs/video/stream?videoId=5GCfYLguTIs 200 in 7.7s (next.js: 101ms, application-code: 7.6s)
+ GET /api/songs/video/stream?videoId=5GCfYLguTIs 200 in 8.3s (next.js: 228ms, application-code: 8.0s)
+ GET /api/songs/trending 200 in 5.9s (next.js: 23ms, application-code: 5.8s)
+ GET /api/songs/video/stream?videoId=5GCfYLguTIs 200 in 8.0s (next.js: 47ms, application-code: 7.9s)
+ GET /api/songs/video/stream?videoId=5GCfYLguTIs 200 in 8.7s (next.js: 183ms, application-code: 8.5s)
+ GET /api/songs/video/stream?videoId=5GCfYLguTIs 200 in 8.9s (next.js: 61ms, application-code: 8.9s)
+ GET /api/songs/trending 200 in 4.8s (next.js: 16ms, application-code: 4.8s)
+ GET /api/songs/trending 200 in 8.4s (next.js: 399ms, application-code: 8.0s)
+ GET /api/songs/audio/stream?videoId=5GCfYLguTIs 200 in 20.4s (next.js: 152ms, application-code: 20.2s)
+ GET /api/songs/trending 200 in 29.4s (next.js: 82ms, application-code: 29.3s)
+ GET /api/songs/video/stream?videoId=5GCfYLguTIs 200 in 32.8s (next.js: 33ms, application-code: 32.8s)
+ GET /api/songs/video/stream?videoId=5GCfYLguTIs 200 in 33.5s (next.js: 23ms, application-code: 33.5s)
+ GET /api/songs/video/stream?videoId=5GCfYLguTIs&stream=1 200 in 84s (next.js: 13ms, application-code: 84s)
+ GET /api/songs/trending 200 in 5.3s (next.js: 16ms, application-code: 5.3s)
+ GET /api/songs/trending 200 in 4.9s (next.js: 5ms, application-code: 4.9s)
+ PUT /api/activity 200 in 1944ms (next.js: 15ms, application-code: 1929ms)
+ GET /api/songs/audio/stream?videoId=vt0i6nuqNEo 200 in 2.9s (next.js: 15ms, application-code: 2.9s)
+ GET /api/songs/trending 200 in 4.3s (next.js: 34ms, application-code: 4.3s)
+ PUT /api/activity 200 in 470ms (next.js: 12ms, application-code: 457ms)
+ PUT /api/activity 200 in 678ms (next.js: 12ms, application-code: 666ms)
+ PUT /api/activity 200 in 860ms (next.js: 5ms, application-code: 855ms)
+ GET /api/songs/audio/stream?videoId=vB0V3iCSzQw 200 in 3.3s (next.js: 21ms, application-code: 3.3s)
+ GET /api/songs/trending 200 in 4.3s (next.js: 18ms, application-code: 4.3s)
+ PUT /api/activity 200 in 625ms (next.js: 3ms, application-code: 622ms)
+ PUT /api/activity 200 in 423ms (next.js: 24ms, application-code: 398ms)
+ GET /api/songs/audio/stream?videoId=ko70cExuzZM 200 in 2.5s (next.js: 3ms, application-code: 2.5s)
+ GET /api/activity 200 in 1176ms (next.js: 12ms, application-code: 1164ms)
+ GET /api/activity 200 in 890ms (next.js: 11ms, application-code: 880ms)
+ GET /api/friends/28377321095290414/stats 200 in 615ms (next.js: 236ms, application-code: 379ms)
+ GET /api/activity 200 in 1337ms (next.js: 4ms, application-code: 1333ms)
+ GET /api/songs/search?q=hon 200 in 2.4s (next.js: 159ms, application-code: 2.2s)
+ GET /api/activity 200 in 1107ms (next.js: 3ms, application-code: 1103ms)
+ GET /api/songs/search?q=hony 200 in 2.0s (next.js: 7ms, application-code: 2.0s)
+ GET /api/songs/search?q=honey 200 in 1940ms (next.js: 4ms, application-code: 1935ms)
+ PUT /api/activity 200 in 403ms (next.js: 5ms, application-code: 398ms)
+ GET /api/songs/audio/stream?videoId=TwFBtV13KQQ 200 in 2.9s (next.js: 8ms, application-code: 2.9s)
+ GET /api/activity 200 in 1092ms (next.js: 5ms, application-code: 1088ms)
+ GET /api/activity 200 in 1071ms (next.js: 10ms, application-code: 1062ms)
+ GET /api/activity 200 in 948ms (next.js: 10ms, application-code: 939ms)
+ PUT /api/activity 200 in 627ms (next.js: 12ms, application-code: 615ms)
+ GET /api/activity 200 in 1714ms (next.js: 16ms, application-code: 1698ms)
+ GET /api/activity 200 in 959ms (next.js: 10ms, application-code: 949ms)
+ GET /api/songs/live?genre=hindi 200 in 7.2s (next.js: 17ms, application-code: 7.2s)
+ PUT /api/activity 200 in 440ms (next.js: 4ms, application-code: 436ms)
+ PUT /api/activity 200 in 245ms (next.js: 5ms, application-code: 240ms)
+ GET /api/songs/audio/stream?videoId=1ZWiqlRgJAU 200 in 3.1s (next.js: 3ms, application-code: 3.1s)
+ GET /api/songs/trending 200 in 3.8s (next.js: 12ms, application-code: 3.8s)
+ GET /api/songs/audio/stream?videoId=1ZWiqlRgJAU 200 in 3.3s (next.js: 6ms, application-code: 3.3s)
+ GET /api/songs/video/stream?videoId=5GCfYLguTIs&stream=1 200 in 42.5min (next.js: 23ms, application-code: 42.5min)
+TypeError: Invalid state: Controller is already closed
+    at ignore-listed frames {
+  code: 'ERR_INVALID_STATE'
+}
+⨯ uncaughtException: TypeError: Invalid state: Controller is already closed
+    at ignore-listed frames {
+  code: 'ERR_INVALID_STATE'
+}
+⨯ uncaughtException:  TypeError: Invalid state: Controller is already closed
+    at ignore-listed frames {
+  code: 'ERR_INVALID_STATE'
+}
+ GET /api/songs/audio/stream?videoId=vB0V3iCSzQw 200 in 30.1s (next.js: 696ms, application-code: 29.4s)
+⚠ Blocked cross-origin request to Next.js dev resource /_next/hmr from "192.168.1.5".
+Cross-origin access to Next.js dev resources is blocked by default for safety.
+
+To allow this host in development, add it to "allowedDevOrigins" in next.config.js and restart the dev server:
+
+// next.config.js
+module.exports = {
+  allowedDevOrigins: ['192.168.1.5'],
+}
+
+Read more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins
+ GET /api/songs/trending 200 in 45s (next.js: 3.0s, application-code: 42s)
+ GET / 200 in 11.1s (next.js: 6.1s, application-code: 5.0s)
+⚠ Blocked cross-origin request to Next.js dev resource /_next/static/chunks/node_modules_next_dist_20wefz_._.js from "192.168.1.5".
+Cross-origin access to Next.js dev resources is blocked by default for safety.
+
+To allow this host in development, add it to "allowedDevOrigins" in next.config.js and restart the dev server:
+
+// next.config.js
+module.exports = {
+  allowedDevOrigins: ['192.168.1.5'],
+}
+
+Read more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins
+ GET /api/songs/video/stream?videoId=vB0V3iCSzQw 502 in 73s (next.js: 2.9s, application-code: 71s)
+ GET /api/songs/video/stream?videoId=vB0V3iCSzQw 200 in 84s (next.js: 1880ms, application-code: 82s)
+ GET /api/songs/video/stream?videoId=vB0V3iCSzQw&stream=1 200 in 14.1s (next.js: 33ms, application-code: 14.0s)
+TypeError: Invalid state: Controller is already closed
+    at ignore-listed frames {
+  code: 'ERR_INVALID_STATE'
+}
+⨯ uncaughtException: TypeError: Invalid state: Controller is already closed
+    at ignore-listed frames {
+  code: 'ERR_INVALID_STATE'
+}
+⨯ uncaughtException:  TypeError: Invalid state: Controller is already closed
+    at ignore-listed frames {
+  code: 'ERR_INVALID_STATE'
+}
+ GET / 200 in 2.2s (next.js: 1246ms, application-code: 1002ms)
+ GET / 200 in 412ms (next.js: 167ms, application-code: 245ms)
+ GET /api/songs/trending 200 in 7.0s (next.js: 428ms, application-code: 6.5s)
+ PUT /api/activity 200 in 3.1s (next.js: 321ms, application-code: 2.7s)
+ GET /api/songs/audio/stream?videoId=CBFGDxxfUs8 200 in 26.0s (next.js: 208ms, application-code: 25.8s)
+ GET /api/songs/trending 200 in 38.3s (next.js: 260ms, application-code: 38.0s)
+ PUT /api/activity 200 in 1251ms (next.js: 81ms, application-code: 1170ms)
+ GET /api/songs/video/stream?videoId=CBFGDxxfUs8 200 in 63s (next.js: 127ms, application-code: 63s)
+ GET /api/songs/video/stream?videoId=CBFGDxxfUs8 200 in 63s (next.js: 34ms, application-code: 63s)
+ GET / 200 in 849ms (next.js: 377ms, application-code: 472ms)
+ GET / 200 in 221ms (next.js: 22ms, application-code: 199ms)
+ GET /api/songs/trending 200 in 5.0s (next.js: 16ms, application-code: 5.0s)
+ GET /api/songs/trending 200 in 4.2s (next.js: 10ms, application-code: 4.2s)
+ GET /api/songs/live?genre=hindi 200 in 6.1s (next.js: 22ms, application-code: 6.1s)
+ GET /api/songs/audio/stream?videoId=5GCfYLguTIs 200 in 3.9s (next.js: 7ms, application-code: 3.9s)
+ PUT /api/activity 200 in 1084ms (next.js: 25ms, application-code: 1059ms)
+ GET /api/songs/trending 200 in 5.2s (next.js: 43ms, application-code: 5.2s)
+ GET /api/songs/video/stream?videoId=5GCfYLguTIs 200 in 7.5s (next.js: 62ms, application-code: 7.5s)
+ GET /api/songs/video/stream?videoId=5GCfYLguTIs 200 in 7.8s (next.js: 34ms, application-code: 7.8s)
+ GET /api/songs/video/stream?videoId=5GCfYLguTIs 200 in 7.8s (next.js: 46ms, application-code: 7.8s)
+ GET /api/songs/video/stream?videoId=5GCfYLguTIs&stream=1 200 in 14.6s (next.js: 13ms, application-code: 14.6s)
+TypeError: Invalid state: Controller is already closed
+    at ignore-listed frames {
+  code: 'ERR_INVALID_STATE'
+}
+⨯ uncaughtException: TypeError: Invalid state: Controller is already closed
+    at ignore-listed frames {
+  code: 'ERR_INVALID_STATE'
+}
+⨯ uncaughtException:  TypeError: Invalid state: Controller is already closed
+    at ignore-listed frames {
+  code: 'ERR_INVALID_STATE'
+}
+ GET /api/songs/video/stream?videoId=5GCfYLguTIs&stream=1 200 in 14.5s (next.js: 6ms, application-code: 14.5s)
+TypeError: Invalid state: Controller is already closed
+    at ignore-listed frames {
+  code: 'ERR_INVALID_STATE'
+}
+⨯ uncaughtException: TypeError: Invalid state: Controller is already closed
+    at ignore-listed frames {
+  code: 'ERR_INVALID_STATE'
+}
+⨯ uncaughtException:  TypeError: Invalid state: Controller is already closed
+    at ignore-listed frames {
+  code: 'ERR_INVALID_STATE'
+}
+ GET /api/songs/video/stream?videoId=5GCfYLguTIs&stream=1 200 in 14.4s (next.js: 5ms, application-code: 14.4s)
+TypeError: Invalid state: Controller is already closed
+    at ignore-listed frames {
+  code: 'ERR_INVALID_STATE'
+}
+⨯ uncaughtException: TypeError: Invalid state: Controller is already closed
+    at ignore-listed frames {
+  code: 'ERR_INVALID_STATE'
+}
+⨯ uncaughtException:  TypeError: Invalid state: Controller is already closed
+    at ignore-listed frames {
+  code: 'ERR_INVALID_STATE'
+}
+ GET / 200 in 66ms (next.js: 13ms, application-code: 53ms)
+ PUT /api/activity 200 in 295ms (next.js: 5ms, application-code: 290ms)
+ GET /api/songs/video/stream?videoId=5GCfYLguTIs&stream=1 206 in 12.1s (next.js: 4ms, application-code: 12.1s)
+ GET /api/songs/video/stream?videoId=5GCfYLguTIs&stream=1 206 in 1819ms (next.js: 11ms, application-code: 1808ms)
+TypeError: Invalid state: Controller is already closed
+    at ignore-listed frames {
+  code: 'ERR_INVALID_STATE'
+}
+⨯ uncaughtException: TypeError: Invalid state: Controller is already closed
+    at ignore-listed frames {
+  code: 'ERR_INVALID_STATE'
+}
+⨯ uncaughtException:  TypeError: Invalid state: Controller is already closed
+    at ignore-listed frames {
+  code: 'ERR_INVALID_STATE'
+}
+ DELETE /api/activity 200 in 260ms (next.js: 12ms, application-code: 247ms)
+ PUT /api/activity 200 in 359ms (next.js: 6ms, application-code: 352ms)
+ GET /api/songs/audio/stream?videoId=-YlmnPh-6rE 200 in 2.7s (next.js: 4ms, application-code: 2.6s)
+ DELETE /api/activity 200 in 506ms (next.js: 6ms, application-code: 500ms)
+ GET /api/activity 200 in 1222ms (next.js: 11ms, application-code: 1211ms)
+ GET /api/activity 200 in 987ms (next.js: 4ms, application-code: 983ms)
+ GET /api/friends/4088741228087007/stats 200 in 423ms (next.js: 37ms, application-code: 387ms)
+ GET /api/songs/live?genre=punjabi 200 in 6.9s (next.js: 4ms, application-code: 6.9s)
+ GET /api/activity 200 in 1159ms (next.js: 13ms, application-code: 1146ms)
+ PUT /api/activity 200 in 398ms (next.js: 5ms, application-code: 393ms)
+ GET /api/songs/audio/stream?videoId=lRkOBsOv5Ec 200 in 2.9s (next.js: 14ms, application-code: 2.9s)
+ GET /api/activity 200 in 1057ms (next.js: 11ms, application-code: 1046ms)
+ GET /api/activity 200 in 1550ms (next.js: 5ms, application-code: 1545ms)
+ GET /api/activity 200 in 1037ms (next.js: 5ms, application-code: 1032ms)
+ GET /api/friends/28377321095290414/stats 200 in 580ms (next.js: 15ms, application-code: 564ms)
+ GET /api/activity 200 in 1115ms (next.js: 12ms, application-code: 1104ms)
+ DELETE /api/activity 200 in 484ms (next.js: 11ms, application-code: 473ms)
+ GET /api/songs/live?genre=hindi 200 in 6.9s (next.js: 5ms, application-code: 6.9s)
+ GET /api/activity 200 in 1175ms (next.js: 10ms, application-code: 1165ms)
+ PUT /api/activity 200 in 574ms (next.js: 42ms, application-code: 532ms)
+ GET /api/songs/audio/stream?videoId=g3zuh97eF10 200 in 3.0s (next.js: 4ms, application-code: 3.0s)
+ GET /api/activity 200 in 1096ms (next.js: 4ms, application-code: 1092ms)
+ GET /api/friends/4088741228087007/stats 200 in 376ms (next.js: 21ms, application-code: 355ms)
+ DELETE /api/activity 200 in 242ms (next.js: 3ms, application-code: 238ms)
+ GET /api/activity 200 in 983ms (next.js: 11ms, application-code: 972ms)
+ GET /api/songs/live?genre=punjabi 200 in 5.8s (next.js: 11ms, application-code: 5.8s)
+ GET /api/songs/live?genre=hindi 200 in 6.2s (next.js: 11ms, application-code: 6.2s)
+ GET /api/activity 200 in 1074ms (next.js: 4ms, application-code: 1070ms)
+ PUT /api/activity 200 in 415ms (next.js: 4ms, application-code: 411ms)
+ GET /api/songs/audio/stream?videoId=g3zuh97eF10 200 in 2.3s (next.js: 14ms, application-code: 2.3s)
+ GET /api/activity 200 in 1008ms (next.js: 4ms, application-code: 1004ms)
+ GET /api/activity 200 in 1037ms (next.js: 4ms, application-code: 1033ms)
+ DELETE /api/activity 200 in 274ms (next.js: 11ms, application-code: 263ms)
+ GET /api/activity 200 in 1246ms (next.js: 10ms, application-code: 1235ms)
+ GET /api/songs/trending 200 in 4.7s (next.js: 4ms, application-code: 4.7s)
+ GET /api/songs/trending 200 in 4.4s (next.js: 11ms, application-code: 4.4s)
+ GET /api/activity 200 in 1421ms (next.js: 10ms, application-code: 1411ms)
+ GET /api/songs/trending 200 in 4.3s (next.js: 4ms, application-code: 4.3s)
+ GET /api/songs/audio/stream?videoId=nHeXL2We4EE 200 in 3.6s (next.js: 4ms, application-code: 3.6s)
+ PUT /api/activity 200 in 432ms (next.js: 8ms, application-code: 424ms)
+ GET /api/songs/trending 200 in 5.5s (next.js: 6ms, application-code: 5.5s)
+ GET /api/songs/video/stream?videoId=nHeXL2We4EE 502 in 6.8s (next.js: 54ms, application-code: 6.7s)
+ GET /api/songs/video/stream?videoId=nHeXL2We4EE 502 in 6.8s (next.js: 74ms, application-code: 6.8s)
+ GET /api/songs/video/stream?videoId=nHeXL2We4EE 502 in 7.3s (next.js: 23ms, application-code: 7.3s)
+ GET /api/songs/audio/stream?videoId=JgDNFQ2RaLQ 200 in 3.8s (next.js: 53ms, application-code: 3.8s)
+ PUT /api/activity 200 in 381ms (next.js: 6ms, application-code: 375ms)
+ PUT /api/activity 200 in 252ms (next.js: 12ms, application-code: 240ms)
+ PUT /api/activity 200 in 330ms (next.js: 6ms, application-code: 324ms)
+ GET /api/songs/trending 200 in 5.0s (next.js: 5ms, application-code: 5.0s)
+ GET /api/activity 200 in 1353ms (next.js: 11ms, application-code: 1342ms)
+ GET /api/songs/video/stream?videoId=JgDNFQ2RaLQ 502 in 13.3s (next.js: 80ms, application-code: 13.2s)
+ GET /api/songs/video/stream?videoId=JgDNFQ2RaLQ 200 in 13.5s (next.js: 8ms, application-code: 13.4s)
+ GET /api/songs/video/stream?videoId=JgDNFQ2RaLQ 502 in 14.0s (next.js: 36ms, application-code: 14.0s)
+ PUT /api/activity 200 in 1496ms (next.js: 6ms, application-code: 1490ms)
+ GET /api/songs/video/stream?videoId=JgDNFQ2RaLQ&stream=1 200 in 11.8s (next.js: 6ms, application-code: 11.8s)
+TypeError: Invalid state: Controller is already closed
+    at ignore-listed frames {
+  code: 'ERR_INVALID_STATE'
+}
+⨯ uncaughtException: TypeError: Invalid state: Controller is already closed
+    at ignore-listed frames {
+  code: 'ERR_INVALID_STATE'
+}
+⨯ uncaughtException:  TypeError: Invalid state: Controller is already closed
+    at ignore-listed frames {
+  code: 'ERR_INVALID_STATE'
+}
+ GET /api/songs/video/stream?videoId=JgDNFQ2RaLQ&stream=1 206 in 269ms (next.js: 11ms, application-code: 258ms)
+ DELETE /api/activity 200 in 273ms (next.js: 4ms, application-code: 269ms)
+ GET /api/activity 200 in 1026ms (next.js: 11ms, application-code: 1015ms)
+ GET /api/activity 200 in 1112ms (next.js: 3ms, application-code: 1109ms)
+ GET /api/songs/trending 200 in 7.3s (next.js: 4ms, application-code: 7.3s)
+ GET /api/activity 200 in 1126ms (next.js: 11ms, application-code: 1116ms)
+ GET /api/activity 200 in 1030ms (next.js: 11ms, application-code: 1019ms)
+ GET /api/activity 200 in 946ms (next.js: 11ms, application-code: 935ms)
+ GET /api/activity 200 in 961ms (next.js: 11ms, application-code: 950ms)
+ GET /api/activity 200 in 976ms (next.js: 4ms, application-code: 972ms)
+ GET /api/activity 200 in 1075ms (next.js: 3ms, application-code: 1072ms)
+ GET /api/activity 200 in 5.9s (next.js: 4ms, application-code: 5.9s)
+ GET /api/songs/trending 200 in 4.5s (next.js: 10ms, application-code: 4.5s)
+ GET /api/activity 200 in 1630ms (next.js: 11ms, application-code: 1619ms)
+ GET /api/songs/live?genre=hindi 200 in 6.6s (next.js: 11ms, application-code: 6.6s)
+ GET /api/activity 200 in 1084ms (next.js: 11ms, application-code: 1073ms)
+ GET /api/friends/4088741228087007/stats 200 in 533ms (next.js: 24ms, application-code: 509ms)
+⚠ Found a change in next.config.ts. Restarting the server to apply the changes...
+▲ Next.js 16.3.3 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://0.0.0.0:3000
+- Environments: .env.local
+✓ Ready in 5.6s
+✓ Running next.config.ts took 558ms
+
+ GET /api/health 200 in 2.0s (next.js: 1937ms, application-code: 92ms)
