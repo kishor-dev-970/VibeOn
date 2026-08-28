@@ -54,4 +54,6 @@ export interface FriendStats {
   estimatedMinutes: number;
   songsListened: SongStat[];
   recentPlays: RecentPlay[];
+  lastSeen?: string | null;
+  nowPlaying?: NowPlaying | null;
 }

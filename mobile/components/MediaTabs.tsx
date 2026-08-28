@@ -25,6 +25,7 @@ interface Props {
   onPlay: (song: Song, index?: number) => void;
   activeSongId?: string | null;
   emptyLabel?: string;
+  loadingLabel?: string;
 }
 
 export default function MediaTabs({
@@ -37,6 +38,7 @@ export default function MediaTabs({
   onPlay,
   activeSongId,
   emptyLabel,
+  loadingLabel,
 }: Props) {
   return (
     <View style={styles.container}>
@@ -56,7 +58,10 @@ export default function MediaTabs({
       </View>
 
       {loading ? (
-        <ActivityIndicator style={{ marginTop: 60 }} color={Colors.primary} />
+        <View style={styles.loadingWrap}>
+          <ActivityIndicator color={Colors.primary} />
+          {loadingLabel ? <Text style={styles.empty}>{loadingLabel}</Text> : null}
+        </View>
       ) : (
         <FlatList
           data={songs}
@@ -115,5 +120,10 @@ const styles = StyleSheet.create({
     marginTop: 60,
     fontSize: 14,
     color: Colors.textMuted,
+  },
+  loadingWrap: {
+    alignItems: 'center',
+    marginTop: 60,
+    gap: 14,
   },
 });

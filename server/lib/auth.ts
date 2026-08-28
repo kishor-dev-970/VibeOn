@@ -1,6 +1,7 @@
 import { SignJWT, jwtVerify } from 'jose';
 import { ApiError, requireEnv } from './env';
 import { supabaseAdmin } from './supabase';
+import { bumpPresence } from './presence';
 import type { AppUser } from './types';
 
 function secret(): Uint8Array {
@@ -36,5 +37,6 @@ export async function requireUser(req: Request): Promise<AppUser> {
     .eq('id', userId)
     .single();
   if (error || !data) throw new ApiError(401, 'User not found', 'user_not_found');
+  bumpPresence(userId);
   return data as AppUser;
 }

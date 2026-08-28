@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { ApiError } from '@/lib/env';
 import { requireUser } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
+import { getPresenceMs } from '@/lib/presence';
 import { corsPreflight, handleError, ok } from '@/lib/http';
 
 interface HistoryRow {
@@ -10,6 +11,15 @@ interface HistoryRow {
   channel: string;
   thumbnail_url: string;
   played_at: string;
+}
+
+interface NowPlayingRow {
+  video_id: string;
+  title: string;
+  channel: string;
+  thumbnail_url: string;
+  is_playing: boolean;
+  updated_at: string;
 }
 
 export async function OPTIONS(): Promise<Response> {
@@ -46,6 +56,29 @@ export async function GET(
     if (histErr) throw new ApiError(502, 'Failed to load friend stats', 'db_error');
 
     const rows = (history ?? []) as HistoryRow[];
+
+    // Friend's current activity (if any).
+    let nowPlaying: NowPlayingRow | null = null;
+    try {
+      const { data: np } = await sb
+        .from('now_playing')
+        .select('video_id, title, channel, thumbnail_url, is_playing, updated_at')
+        .eq('user_id', friendUser.id as string)
+        .maybeSingle();
+      if (np?.video_id) nowPlaying = np as unknown as NowPlayingRow;
+    } catch {
+      nowPlaying = null;
+    }
+
+    const presenceMs = getPresenceMs(friendUser.id as string);
+    let lastSeen: string | null = null;
+    if (presenceMs !== undefined) {
+      lastSeen = new Date(presenceMs).toISOString();
+    } else if (nowPlaying?.updated_at) {
+      lastSeen = nowPlaying.updated_at;
+    } else if (rows.length > 0) {
+      lastSeen = rows[0].played_at;
+    }
 
     // Calculate unique songs
     const uniqueSongs = new Map<string, { title: string; channel: string; thumbnail_url: string; count: number }>();
@@ -92,6 +125,17 @@ export async function GET(
       songsListened: songsListened.slice(0, 50),
       recentPlays,
       weekStart: weekAgo,
+      lastSeen,
+      nowPlaying: nowPlaying
+        ? {
+            videoId: nowPlaying.video_id,
+            title: nowPlaying.title,
+            channel: nowPlaying.channel,
+            thumbnailUrl: nowPlaying.thumbnail_url,
+            isPlaying: nowPlaying.is_playing,
+            updatedAt: nowPlaying.updated_at,
+          }
+        : null,
     });
   } catch (err) {
     return handleError(err);

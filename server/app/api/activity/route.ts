@@ -4,6 +4,7 @@ import { requireUser } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
 import { corsPreflight, handleError, ok } from '@/lib/http';
 import type { FriendActivity, NowPlaying, Song } from '@/lib/types';
+import { getPresenceMs } from '@/lib/presence';
 
 const ACTIVITY_TTL_MS = 10 * 60 * 1000;
 
@@ -57,13 +58,24 @@ export async function GET(req: NextRequest): Promise<Response> {
       }
     }
 
-    const activities: FriendActivity[] = (users ?? []).map((u) => ({
-      id: u.id,
-      name: u.name,
-      code: u.code,
-      avatarUrl: u.avatar_url,
-      nowPlaying: byUserId.get(u.id) ?? null,
-    }));
+    const activities: FriendActivity[] = (users ?? []).map((u) => {
+      const now = byUserId.get(u.id);
+      const presenceMs = getPresenceMs(u.id);
+      let lastActive: string | null = null;
+      if (presenceMs !== undefined) {
+        lastActive = new Date(presenceMs).toISOString();
+      } else if (now?.updatedAt) {
+        lastActive = now.updatedAt;
+      }
+      return {
+        id: u.id,
+        name: u.name,
+        code: u.code,
+        avatarUrl: u.avatar_url,
+        nowPlaying: now ?? null,
+        lastActive,
+      };
+    });
     return ok({ friends: activities });
   } catch (err) {
     return handleError(err);

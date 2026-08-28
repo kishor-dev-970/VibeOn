@@ -3,7 +3,7 @@ import { corsPreflight, handleError, ok } from '@/lib/http';
 import { ytdlLiveSearch, ytdlSearch } from '@/lib/ytdl';
 
 const LIVE_QUERIES: Record<string, string[]> = {
-  hindi: ['hindi live radio', 'bollywood live music', 'hindi songs live 24/7'],
+  hindi: ['hindi songs live 24/7', 'bollywood music live stream', 'hindi gaane live radio'],
   punjabi: ['punjabi live radio', 'punjabi songs live', 'punjabi music 24/7'],
   english: ['english live music radio', 'pop live radio', 'english songs live 24/7'],
 };
@@ -27,8 +27,11 @@ export async function GET(req: NextRequest): Promise<Response> {
     const seen = new Set<string>();
     const all: any[] = [];
 
-    for (const q of liveQueries) {
-      for (const s of await ytdlLiveSearch(q, 8)) {
+    const batches = await Promise.all(
+      liveQueries.map((q) => ytdlLiveSearch(q, 8).catch(() => [] as any[]))
+    );
+    for (const batch of batches) {
+      for (const s of batch) {
         if (!seen.has(s.videoId)) {
           seen.add(s.videoId);
           all.push(s);
@@ -37,8 +40,11 @@ export async function GET(req: NextRequest): Promise<Response> {
     }
 
     if (all.length === 0) {
-      for (const q of fallbackQueries) {
-        for (const s of await ytdlSearch(q, 10)) {
+      const fallbackBatches = await Promise.all(
+        fallbackQueries.map((q) => ytdlSearch(q, 10).catch(() => [] as any[]))
+      );
+      for (const batch of fallbackBatches) {
+        for (const s of batch) {
           if (!seen.has(s.videoId)) {
             seen.add(s.videoId);
             all.push(s);

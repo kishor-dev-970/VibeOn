@@ -6,6 +6,7 @@ import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import android.view.ViewGroup
+import android.webkit.CookieManager
 import android.webkit.JavascriptInterface
 import android.webkit.RenderProcessGoneDetail
 import android.webkit.WebResourceError
@@ -99,6 +100,10 @@ class BraveliteWebView(context: Context) : android.widget.FrameLayout(context) {
             ViewGroup.LayoutParams.MATCH_PARENT
         )
         wv.setBackgroundColor(0xFF0F0F0F.toInt())
+        CookieManager.getInstance().setAcceptCookie(true)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            CookieManager.getInstance().setAcceptThirdPartyCookies(wv, true)
+        }
         wv.settings.apply {
             javaScriptEnabled = true
             domStorageEnabled = true
@@ -287,7 +292,12 @@ class BraveliteWebView(context: Context) : android.widget.FrameLayout(context) {
             }
             mainHandler.post {
                 val id = currentVideoId
-                if (id != null && !watchFallbackLoaded) getOrCreateWebView().loadUrl(embedUrl(id, true))
+                if (id != null && !watchFallbackLoaded) {
+                    getOrCreateWebView().loadUrl(
+                        embedUrl(id, true),
+                        mapOf("Referer" to "https://www.youtube-nocookie.com/")
+                    )
+                }
             }
             return true
         }

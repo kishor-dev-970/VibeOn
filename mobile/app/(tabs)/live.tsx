@@ -7,6 +7,7 @@ import {
   View,
 } from 'react-native';
 import { AdFreeVideoPlayer } from '../../components/AdFreeVideoPlayer';
+import { YouTubeWebPlayer } from '../../components/YouTubeWebPlayer';
 import { useRouter } from 'expo-router';
 import MediaTabs from '../../components/MediaTabs';
 import AudioSeekBar from '../../components/AudioSeekBar';
@@ -31,6 +32,7 @@ export default function LiveScreen() {
   const [songs, setSongs] = useState<Song[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [fallbackToStream, setFallbackToStream] = useState(false);
 
   const load = useCallback(async (g: Genre) => {
     try {
@@ -102,7 +104,8 @@ export default function LiveScreen() {
         onRefresh={onRefresh}
         onPlay={handlePlay}
         activeSongId={activeSongId}
-        emptyLabel={`No ${mode} found for ${genre}`}
+        emptyLabel={loading ? undefined : `No live ${mode} found for ${genre} — pull to refresh`}
+        loadingLabel={mode === 'video' ? 'Finding live streams…' : 'Finding live audio…'}
       />
 
       {currentSong && (
@@ -126,17 +129,32 @@ export default function LiveScreen() {
           </View>
 
           {showVideo ? (
-            <AdFreeVideoPlayer
-              ref={youtubeRef}
-              height={200}
-              videoId={currentSong.videoId}
-              play={isPlaying && !videoScreenActive}
-              onChangeState={(state: string) => {
-                if (state === 'playing') setIsPlaying(true);
-                else if (state === 'paused') setIsPlaying(false);
-                else if (state === 'ended') stopPlaying();
-              }}
-            />
+            fallbackToStream ? (
+              <AdFreeVideoPlayer
+                ref={youtubeRef}
+                height={200}
+                videoId={currentSong.videoId}
+                play={isPlaying && !videoScreenActive}
+                onChangeState={(state: string) => {
+                  if (state === 'playing') setIsPlaying(true);
+                  else if (state === 'paused') setIsPlaying(false);
+                  else if (state === 'ended') stopPlaying();
+                }}
+              />
+            ) : (
+              <YouTubeWebPlayer
+                ref={youtubeRef}
+                height={200}
+                videoId={currentSong.videoId}
+                play={isPlaying && !videoScreenActive}
+                onChangeState={(state) => {
+                  if (state === 'playing') setIsPlaying(true);
+                  else if (state === 'paused') setIsPlaying(false);
+                  else if (state === 'ended') stopPlaying();
+                }}
+                onFallbackToStream={() => setFallbackToStream(true)}
+              />
+            )
           ) : (
             <View style={styles.audioOnly}>
               {!!currentSong.thumbnailUrl && (

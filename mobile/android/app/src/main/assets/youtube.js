@@ -64,6 +64,8 @@
     '.ytp-skip-ad-button, ' +
     '.ytp-ad-skip-button, ' +
     '.ytp-ad-skip-button-modern, ' +
+    '.ytp-ad-skip-button-mobile, ' +
+    '.ytp-ad-skip-button-slot, ' +
     '.videoAdUiSkipButton';
 
   function player() {
@@ -149,6 +151,13 @@
         .querySelectorAll('.ytp-ad-overlay-close-button, .ytp-ad-overlay-close-container')
         .forEach(function (b) {
           b.click();
+        });
+
+      // Brand watermark "i" popups and banner overlays should be dismissed too.
+      document
+        .querySelectorAll('.iv-branding .iv-branding-context-button, .ytp-ad-message-overlay')
+        .forEach(function (b) {
+          if (b.click) b.click();
         });
 
       var skip = document.querySelector(SKIP_SEL);

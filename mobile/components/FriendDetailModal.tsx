@@ -4,7 +4,7 @@ import {
 } from 'react-native';
 import { Colors, BorderRadius, Spacing } from '../lib/theme';
 import * as api from '../lib/api';
-import type { FriendStats } from '../lib/types';
+import type { FriendStats, NowPlaying } from '../lib/types';
 
 interface Props {
   friendId: string;
@@ -13,9 +13,24 @@ interface Props {
   darkMode: boolean;
   onClose: () => void;
   onPlaySong: (song: { videoId: string; title: string; channel: string; thumbnailUrl: string }) => void;
+  onPlayCurrent?: (song: NowPlaying, audioMode?: boolean) => void;
 }
 
-export default function FriendDetailModal({ friendId, friendName, friendCode, darkMode, onClose, onPlaySong }: Props) {
+const formatLastSeen = (iso?: string | null): string => {
+  if (!iso) return 'Unknown';
+  const t = new Date(iso).getTime();
+  if (Number.isNaN(t)) return 'Unknown';
+  const d = new Date(t);
+  return d.toLocaleString([], {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+};
+
+export default function FriendDetailModal({ friendId, friendName, friendCode, darkMode, onClose, onPlaySong, onPlayCurrent }: Props) {
   const [stats, setStats] = useState<FriendStats | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -47,6 +62,17 @@ export default function FriendDetailModal({ friendId, friendName, friendCode, da
         <View style={{ alignItems: 'center' }}>
           <Text style={[styles.title, { color: textColor }]} numberOfLines={1}>{friendName}</Text>
           {friendCode ? <Text style={[styles.code, { color: mutedColor }]}>Code: {friendCode}</Text> : null}
+          {stats ? (
+            stats.nowPlaying?.isPlaying ? (
+              <Text style={[styles.listeningNow, { color: Colors.success }]}>
+                ● Listening now · {formatLastSeen(stats.lastSeen)}
+              </Text>
+            ) : (
+              <Text style={[styles.code, { color: mutedColor }]}>
+                Last seen {formatLastSeen(stats.lastSeen)}
+              </Text>
+            )
+          ) : null}
         </View>
         <View style={{ width: 70 }} />
       </View>
@@ -85,10 +111,47 @@ export default function FriendDetailModal({ friendId, friendName, friendCode, da
           ];
           return (
             <View style={styles.content}>
+              {stats.nowPlaying ? (
+                <View style={[styles.nowPlayingCard, { backgroundColor: cardBg }]}>
+                  <Text style={[styles.nowPlayingLabel, { color: mutedColor }]}>
+                    {stats.nowPlaying.isPlaying ? 'LISTENING NOW' : 'LAST PLAYED'}
+                  </Text>
+                  <View style={styles.nowPlayingRow}>
+                    {!!stats.nowPlaying.thumbnailUrl && (
+                      <Image source={{ uri: stats.nowPlaying.thumbnailUrl }} style={styles.thumb} />
+                    )}
+                    <View style={styles.songMeta}>
+                      <Text style={[styles.songTitle, { color: textColor }]} numberOfLines={1}>
+                        {stats.nowPlaying.title}
+                      </Text>
+                      <Text style={[styles.songChannel, { color: mutedColor }]} numberOfLines={1}>
+                        {stats.nowPlaying.channel}
+                      </Text>
+                    </View>
+                  </View>
+                  {onPlayCurrent ? (
+                    <View style={styles.playRow}>
+                      <Pressable
+                        style={[styles.playBtn, { backgroundColor: Colors.primary }]}
+                        onPress={() => onPlayCurrent(stats.nowPlaying!)}
+                      >
+                        <Text style={styles.playBtnText}>▶ Video</Text>
+                      </Pressable>
+                      <Pressable
+                        style={[styles.playBtn, { backgroundColor: Colors.accent }]}
+                        onPress={() => onPlayCurrent(stats.nowPlaying!, true)}
+                      >
+                        <Text style={styles.playBtnText}>🎵 Audio</Text>
+                      </Pressable>
+                    </View>
+                  ) : null}
+                </View>
+              ) : null}
+
               <View style={styles.statsRow}>
                 <View style={[styles.statCard, { backgroundColor: cardBg }]}>
                   <Text style={[styles.statValue, { color: Colors.primary }]}>{stats.totalSongs}</Text>
-                  <Text style={[styles.statLabel, { color: mutedColor }]}>Songs</Text>
+                  <Text style={[styles.statLabel, { color: mutedColor }]}>Songs played</Text>
                 </View>
                 <View style={[styles.statCard, { backgroundColor: cardBg }]}>
                   <Text style={[styles.statValue, { color: Colors.secondary }]}>{stats.totalPlays}</Text>
@@ -137,7 +200,14 @@ export default function FriendDetailModal({ friendId, friendName, friendCode, da
 }
 
 const styles = StyleSheet.create({
-  overlay: { flex: 1 },
+  overlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 100,
+  },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: Spacing.lg, paddingTop: 56, paddingBottom: Spacing.md,
@@ -145,7 +215,14 @@ const styles = StyleSheet.create({
   closeBtn: { fontSize: 16, fontWeight: '600' },
   title: { fontSize: 18, fontWeight: '700' },
   code: { fontSize: 12, marginTop: 2 },
+  listeningNow: { fontSize: 12, fontWeight: '700', marginTop: 2 },
   content: { flex: 1, paddingHorizontal: Spacing.lg },
+  nowPlayingCard: { borderRadius: BorderRadius.lg, padding: Spacing.md, marginBottom: Spacing.md },
+  nowPlayingLabel: { fontSize: 10, fontWeight: '700', letterSpacing: 1, marginBottom: Spacing.sm },
+  nowPlayingRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  playRow: { flexDirection: 'row', gap: 10, marginTop: Spacing.md },
+  playBtn: { flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: BorderRadius.md },
+  playBtnText: { color: '#FFFFFF', fontSize: 13, fontWeight: '700' },
   statsRow: { flexDirection: 'row', gap: 10, marginBottom: Spacing.xl },
   statCard: { flex: 1, borderRadius: BorderRadius.lg, padding: Spacing.lg, alignItems: 'center' },
   statValue: { fontSize: 24, fontWeight: '800' },

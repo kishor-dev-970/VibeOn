@@ -12,8 +12,9 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../context/AuthContext';
+import { usePlayer } from '../../context/PlayerContext';
 import * as api from '../../lib/api';
-import type { FriendActivity } from '../../lib/types';
+import type { FriendActivity, NowPlaying } from '../../lib/types';
 import { Colors, BorderRadius, Spacing } from '../../lib/theme';
 import FriendDetailModal from '../../components/FriendDetailModal';
 
@@ -30,6 +31,7 @@ const initials = (name: string) =>
 
 export default function FriendsScreen() {
   const { user, signOut } = useAuth();
+  const { playSong } = usePlayer();
   const router = useRouter();
   const [friends, setFriends] = useState<FriendActivity[]>([]);
   const [refreshing, setRefreshing] = useState(false);
@@ -100,6 +102,23 @@ export default function FriendsScreen() {
         thumbnailUrl: song.thumbnailUrl,
       },
     });
+  };
+
+  const handlePlayCurrent = (song: NowPlaying, audioMode = false) => {
+    setSelectedFriend(null);
+    if (audioMode) {
+      playSong(song, true);
+    } else {
+      router.push({
+        pathname: '/video-player',
+        params: {
+          videoId: song.videoId,
+          title: song.title,
+          channel: song.channel,
+          thumbnailUrl: song.thumbnailUrl,
+        },
+      });
+    }
   };
 
   const renderAvatar = (name: string, avatarUrl: string | null | undefined, size = 'small') => (
@@ -195,6 +214,7 @@ export default function FriendsScreen() {
           darkMode={false}
           onClose={() => setSelectedFriend(null)}
           onPlaySong={handlePlaySong}
+          onPlayCurrent={handlePlayCurrent}
         />
       )}
     </View>

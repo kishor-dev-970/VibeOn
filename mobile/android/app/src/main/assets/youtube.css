@@ -11,6 +11,7 @@ ytd-promoted-sparkles-text-search-renderer,
 ytd-promoted-video-renderer,
 ytd-compact-promoted-video-renderer,
 ytm-promoted-video-renderer,
+ytm-promoted-search-content-renderer,
 ytd-video-masthead-ad-v3-renderer,
 ytd-primetime-promo-renderer,
 ytd-action-companion-ad-renderer,
@@ -22,11 +23,32 @@ yt-statement-banner-renderer,
 ytd-mealbar-promo-renderer,
 yt-mealbar-promo-renderer,
 tp-yt-paper-dialog:has(yt-mealbar-promo-renderer),
-.ytp-ad-overlay-container,
+ytd-search-pyv-renderer,
+ytd-engagement-panel-section-list-renderer:has(ytd-membership-offer-renderer),
 ytm-companion-slot,
 ytm-display-ad-renderer,
 ytm-promoted-sparkles-web-renderer,
 ytm-primetime-promo-renderer,
-ytm-in-feed-ad-layout-renderer {
+ytm-in-feed-ad-layout-renderer,
+ytm-ad-slot-renderer,
+ytm-masthead-ad-renderer,
+ytm-masthead-background-renderer,
+ytd-player-legacy-desktop-watch-ads-renderer {
+  display: none !important;
+}
+
+/* 2025-2026 in-player and overlay ad surfaces */
+.ytp-ad-player-overlay,
+.ytp-ad-text-overlay,
+.ytp-ad-image-overlay,
+.ytp-ad-message-overlay,
+.ytp-ad-overlay-list-item,
+.ytp-banner-ad,
+.ytp-ad-feedback-dialog,
+.ytp-ad-feedback-dialog-container,
+.iv-branding,
+.iv-branding-background,
+.iv-branding-text,
+.iv-branding-label {
   display: none !important;
 }
