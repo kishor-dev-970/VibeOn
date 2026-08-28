@@ -23,8 +23,22 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
       python3 \
       python3-pip \
       ca-certificates \
-    && pip3 install --break-system-packages --no-cache-dir yt-dlp \
+      curl \
+      unzip \
+    && pip3 install --break-system-packages --no-cache-dir --prefer-binary yt-dlp \
     && rm -rf /var/lib/apt/lists/*
+
+# YouTube Proof-of-Origin provider (bgutil-pot) + yt-dlp plugin, to survive
+# the "Sign in to confirm you're not a bot" wall on datacenter IPs.
+# Auto-discovered by yt-dlp from ~/.config/yt-dlp/plugins (HOME=/root).
+RUN curl -fsSL -o /usr/local/bin/bgutil-pot \
+      https://github.com/jim60105/bgutil-ytdlp-pot-provider-rs/releases/latest/download/bgutil-pot-linux-x86_64 \
+    && chmod +x /usr/local/bin/bgutil-pot \
+    && mkdir -p /root/.config/yt-dlp/plugins \
+    && curl -fsSL -o /tmp/bgutil-pot-plugin.zip \
+      https://github.com/jim60105/bgutil-ytdlp-pot-provider-rs/releases/latest/download/bgutil-ytdlp-pot-provider-rs.zip \
+    && (cd /root/.config/yt-dlp/plugins && unzip -q /tmp/bgutil-pot-plugin.zip) \
+    && rm /tmp/bgutil-pot-plugin.zip
 
 WORKDIR /app
 ENV NODE_ENV=production
@@ -42,4 +56,5 @@ COPY --from=builder /app/public ./public
 RUN mkdir -p /var/cache/social-music && chmod -R a+rw /var/cache/social-music
 
 EXPOSE 3000
-CMD ["node", "server.js"]
+# Start the POT provider sidecar in the background, then run the Next server.
+CMD ["sh", "-c", "(bgutil-pot server --host 127.0.0.1 --port 4416 > /tmp/bgutil-pot.log 2>&1 &) ; exec node server.js"]

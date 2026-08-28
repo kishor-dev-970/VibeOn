@@ -39,7 +39,7 @@ async function resolveProgressiveUrl(videoId: string): Promise<string | null> {
   const args = ['-m', 'yt_dlp', '--no-warnings', ...YTDL_COMMON_ARGS, '-f', '22/18/b[ext=mp4]/b', '--get-url', url];
   try {
     const { stdout } = await execFileAsync(PYTHON, args, {
-      timeout: 30000,
+      timeout: 60000,
       maxBuffer: 1024 * 1024,
     });
     const out = stdout.trim().split(/\r?\n/).filter((l) => l.startsWith('http'));

@@ -56,7 +56,7 @@ async function runSearch(query: string, count = 10): Promise<YtdlEntry[]> {
         '-J',
         `ytsearch${count}:${query}`,
       ],
-      { timeout: 30000, maxBuffer: 8 * 1024 * 1024 }
+      { timeout: 45000, maxBuffer: 8 * 1024 * 1024 }
     );
     const parsed = JSON.parse(stdout) as YtdlPlaylist;
     return parsed.entries ?? [];

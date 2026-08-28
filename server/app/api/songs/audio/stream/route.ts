@@ -31,7 +31,7 @@ export async function GET(req: NextRequest): Promise<Response> {
     let stdout = '';
     try {
       const { stdout: out } = await execFileAsync(PYTHON, args, {
-        timeout: 30000,
+        timeout: 60000,
         maxBuffer: 1024 * 1024,
       });
       stdout = out.trim();
