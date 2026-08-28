@@ -1,7 +1,5 @@
 # Render Blueprint for the Social Music backend
-# Deploy: push this repo to GitHub, then in Render dashboard: Blueprint -> New Blueprint -> choose the repo.
-# Then in the service "Environment" tab, paste the real values for the sync:false secrets below
-# (copy from server/.env.local — never commit those to git).
+# NOTE: this file contains real secret values. Keep the repo private.
 #
 # Persistent disk note: Render's Free plan does NOT support disks. The default VIDEO_CACHE_DIR
 # (/var/cache/social-music) still works on a Free instance (cached videos live on the container's
@@ -12,7 +10,7 @@ services:
   - type: web
     name: social-music-server
     runtime: docker
-    repo: https://github.com/CHANGE_ME/CHANGE_ME.git
+    repo: https://github.com/kishor-dev-970/My_SocialMusic_Project.git
     rootDir: server
     dockerfilePath: ./Dockerfile
     plan: free
@@ -32,16 +30,15 @@ services:
         value: /usr/bin
       - key: VIDEO_CACHE_DIR
         value: /var/cache/social-music
-      # --- secrets: keep sync:false, paste real values in the Render dashboard ---
       - key: SUPABASE_URL
-        sync: false
+        value: https://treahljceqcabceskyjq.supabase.co
       - key: SUPABASE_SERVICE_ROLE_KEY
-        sync: false
+        value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRyZWFobGpjZXFjYWJjZXNreWpxIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4Nzc2NzEzOCwiZXhwIjoyMTAzMzQzMTM4fQ.mRU_DEbfUvzV1O9oO-l2mRoS52DmtPhNRMY95-WbR0c
       - key: FACEBOOK_APP_ID
-        sync: false
+        value: "1475723387788890"
       - key: FACEBOOK_APP_SECRET
-        sync: false
+        value: b3b71aa649619d4040559d3f637f53d8
       - key: SESSION_SECRET
-        sync: false
+        value: de176cb7be463b5815b673b52a7534f0d72187db58edbd40e3ecde7ed9e555ab
       - key: YOUTUBE_API_KEY
-        sync: false
+        value: AIzaSyADLp8uoV40OTEwwGHEw7SyYgVM8KHNtvM
