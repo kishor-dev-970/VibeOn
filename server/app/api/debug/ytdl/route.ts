@@ -1,4 +1,5 @@
 import { execFile } from 'child_process';
+import { NextRequest } from 'next/server';
 import { constants } from 'node:fs';
 import { access, readFile, readdir } from 'node:fs/promises';
 import { promisify } from 'util';
@@ -6,8 +7,12 @@ import { promisify } from 'util';
 const execFileAsync = promisify(execFile);
 const PYTHON = process.env.PYTHON_PATH ?? 'python3';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   const out: Record<string, unknown> = { timestamp: new Date().toISOString() };
+  const videoId = req.nextUrl.searchParams.get('videoId') ?? 'rS38ukl_VsE';
+  const clients = req.nextUrl.searchParams.get('clients') ?? 'web_embedded,android';
+  const legacy = req.nextUrl.searchParams.get('pot') === 'legacy';
+  const bypassCache = req.nextUrl.searchParams.get('bypass') === '1';
 
   try {
     await access('/usr/local/bin/bgutil-pot', constants.X_OK);
@@ -38,15 +43,18 @@ export async function GET() {
     out.plugins = `err: ${e?.stderr ?? e?.message ?? e}`;
   }
 
+  const extractorArgs = `youtube:player_client=${clients}` + (legacy ? ';youtubepot-bgutilhttp:disable_innertube=1' : '');
   const args = [
     '-m', 'yt_dlp',
     '--verbose',
     '--simulate',
     '--skip-download',
-    '--extractor-args', 'youtube:player_client=web_embedded,android',
+    ...(bypassCache ? ['--no-cache-dir'] : []),
+    '--extractor-args', extractorArgs,
     '--get-title',
-    'https://www.youtube.com/watch?v=rS38ukl_VsE',
+    `https://www.youtube.com/watch?v=${videoId}`,
   ];
+  out.request = { videoId, clients, legacy, extractorArgs };
   try {
     const { stdout, stderr } = await execFileAsync(PYTHON, args, {
       timeout: 45000,
