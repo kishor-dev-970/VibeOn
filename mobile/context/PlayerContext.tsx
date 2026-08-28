@@ -7,8 +7,13 @@ import {
   useRef,
   useState,
 } from 'react';
-import { AppState } from 'react-native';
-import { createAudioPlayer, setAudioModeAsync, type AudioPlayer } from 'expo-audio';
+import { AppState, Platform } from 'react-native';
+import {
+  createAudioPlayer,
+  setAudioModeAsync,
+  requestNotificationPermissionsAsync,
+  type AudioPlayer,
+} from 'expo-audio';
 import type { Song } from '../lib/types';
 import * as api from '../lib/api';
 
@@ -96,6 +101,11 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         shouldPlayInBackground: true,
         interruptionMode: 'doNotMix',
       });
+      if (Platform.OS === 'android') {
+        try {
+          await requestNotificationPermissionsAsync();
+        } catch {}
+      }
       audioConfiguredRef.current = true;
     } catch {}
   }, []);

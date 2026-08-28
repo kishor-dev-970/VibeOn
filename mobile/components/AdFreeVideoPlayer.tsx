@@ -32,6 +32,7 @@ export const AdFreeVideoPlayer = forwardRef<AdFreeVideoPlayerHandle, AdFreeVideo
     const onChangeStateRef = useRef(onChangeState);
     onChangeStateRef.current = onChangeState;
     const didPlayRef = useRef(false);
+    const replacedVideoIdRef = useRef<string | null>(null);
 
     useEventListener(player, 'playingChange', ({ isPlaying }) => {
       if (isPlaying) didPlayRef.current = true;
@@ -41,12 +42,16 @@ export const AdFreeVideoPlayer = forwardRef<AdFreeVideoPlayerHandle, AdFreeVideo
       if (!didPlayRef.current) return;
       onChangeStateRef.current?.('ended');
     });
+    useEventListener(player, 'statusChange', ({ status }) => {
+      if (status === 'error') onChangeStateRef.current?.('error');
+    });
 
     useEffect(() => {
       let cancelled = false;
       setSource(null);
       setError(false);
       setLoading(true);
+      replacedVideoIdRef.current = null;
       const load = async () => {
         try {
           const url = streamUrlCache[videoId] ?? (await api.fetchVideoStream(videoId)).videoUrl;
@@ -66,10 +71,13 @@ export const AdFreeVideoPlayer = forwardRef<AdFreeVideoPlayerHandle, AdFreeVideo
     }, [videoId]);
 
     useEffect(() => {
-      if (source) {
-        try { player.replace(source, true); } catch {}
-      }
-    }, [source, player]);
+      if (!source || replacedVideoIdRef.current === videoId) return;
+      replacedVideoIdRef.current = videoId;
+      try {
+        player.replace(source);
+      } catch {}
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [source, videoId]);
 
     useEffect(() => {
       if (!source || error) return;
@@ -88,11 +96,13 @@ export const AdFreeVideoPlayer = forwardRef<AdFreeVideoPlayerHandle, AdFreeVideo
         stopVideo: () => {
           try {
             player.pause();
-            player.replace(null, true);
+            player.replace(null);
           } catch {}
         },
         seekTo: (seconds: number) => {
-          try { player.currentTime = seconds; } catch {}
+          try {
+            if (Number.isFinite(seconds) && seconds > 0) player.currentTime = seconds;
+          } catch {}
         },
         getCurrentTime: () => player.currentTime,
       }),
