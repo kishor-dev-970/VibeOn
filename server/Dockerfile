@@ -48,6 +48,9 @@ ENV HOSTNAME=0.0.0.0
 ENV PYTHON_PATH=python3
 ENV FFMPEG_PATH=/usr/bin
 ENV VIDEO_CACHE_DIR=/var/cache/social-music
+ENV POT_SERVER_HOST=127.0.0.1
+ENV POT_SERVER_PORT=4416
+ENV TOKEN_TTL=6
 
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
@@ -56,5 +59,7 @@ COPY --from=builder /app/public ./public
 RUN mkdir -p /var/cache/social-music && chmod -R a+rw /var/cache/social-music
 
 EXPOSE 3000
-# Start the POT provider sidecar in the background, then run the Next server.
-CMD ["sh", "-c", "(bgutil-pot server --host 127.0.0.1 --port 4416 > /tmp/bgutil-pot.log 2>&1 &) ; exec node server.js"]
+# Start the bgutil POT sidecar (proves origin to YouTube, bypassing the
+# datacenter "Sign in to confirm you're not a bot" wall), wait up to 15s for
+# its /ping, then run the Next server. yt-dlp auto-discovers it on 127.0.0.1:4416.
+CMD ["sh", "-c", "bgutil-pot server --host 127.0.0.1 --port 4416 > /tmp/bgutil-pot.log 2>&1 & i=0; until curl -fsS http://127.0.0.1:4416/ping >/dev/null 2>&1 || [ $i -ge 15 ]; do sleep 1; i=$((i+1)); done; curl -fsS http://127.0.0.1:4416/ping && echo 'bgutil-pot ready' >> /tmp/bgutil-pot.log 2>&1; exec node server.js"]
