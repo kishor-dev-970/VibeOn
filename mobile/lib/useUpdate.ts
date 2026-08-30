@@ -23,13 +23,14 @@ export function useUpdate(): UseUpdateResult {
 
     (async () => {
       try {
-        const [latest, dismissed] = await Promise.all([
+        const [latest, dismissed, installed] = await Promise.all([
           checkForUpdate(),
           AsyncStorage.getItem(DISMISSED_KEY),
+          installedVersion(),
         ]);
         if (!latest) return;
         if (dismissed === latest.latestVersion) return;
-        if (!isNewerVersion(latest.latestVersion, installedVersion())) {
+        if (!isNewerVersion(latest.latestVersion, installed)) {
           await AsyncStorage.setItem(DISMISSED_KEY, latest.latestVersion).catch(() => {});
           return;
         }

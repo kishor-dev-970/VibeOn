@@ -1,6 +1,7 @@
 import {
   Alert, Pressable, ScrollView, StyleSheet, Text, View, Share, Linking,
 } from 'react-native';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../context/AuthContext';
 import { checkForUpdate, installedVersion, isNewerVersion } from '../lib/update';
@@ -12,6 +13,11 @@ const APP_NAME = 'VibeOn';
 export default function SettingsScreen() {
   const router = useRouter();
   const { user, signOut } = useAuth();
+  const [installed, setInstalled] = useState('…');
+
+  useEffect(() => {
+    installedVersion().then(setInstalled).catch(() => setInstalled(''));
+  }, []);
 
   const inviteFacebook = async () => {
     try {
@@ -37,7 +43,6 @@ export default function SettingsScreen() {
   };
 
   const handleCheckUpdate = async () => {
-    const installed = installedVersion();
     let update: { latestVersion: string; downloadUrl: string } | null = null;
     try {
       update = await checkForUpdate();
@@ -112,7 +117,7 @@ export default function SettingsScreen() {
         <Text style={styles.sectionTitle}>ABOUT</Text>
         <View style={styles.card}>
           <Text style={styles.settingLabel}>{APP_NAME}</Text>
-          <Text style={styles.version}>Version {installedVersion()}</Text>
+          <Text style={styles.version}>Version {installed}</Text>
           <View style={styles.divider} />
           <Pressable style={styles.inviteBtn} onPress={handleCheckUpdate}>
             <Text style={[styles.inviteIcon, { color: Colors.primary }]}>🔄</Text>

@@ -5,7 +5,7 @@ import {
   View,
   AppState,
   NativeModules,
-  dispatchCommand,
+  UIManager,
 } from 'react-native';
 import { useIsFocused } from 'expo-router';
 import { YOUTUBE_TAB_GO_HOME } from './AppTabBar';
@@ -13,6 +13,7 @@ import { YOUTUBE_TAB_GO_HOME } from './AppTabBar';
 const NativePlayer: any = requireNativeComponent('BraveliteYouTubeView');
 const LocalAudio: any = (NativeModules as any).LocalAudio;
 const BraveliteFullscreen: any = (NativeModules as any).BraveliteFullscreen;
+const CMD = { loadVideo: 1, loadWatch: 2, play: 3, pause: 4, seekTo: 5, stop: 6, loadUrl: 7 };
 
 interface YouTubeWebTabProps {
   url: string;
@@ -65,7 +66,7 @@ export function YouTubeWebTab({ url }: YouTubeWebTabProps) {
     const sub = DeviceEventEmitter.addListener(YOUTUBE_TAB_GO_HOME, () => {
       try {
         if (nativeRef.current) {
-          dispatchCommand(nativeRef.current, 'loadUrl', [url]);
+          UIManager.dispatchViewManagerCommand(nativeRef.current, CMD.loadUrl, [url]);
         }
       } catch {}
     });

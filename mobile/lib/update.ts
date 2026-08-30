@@ -1,4 +1,7 @@
 import Constants from 'expo-constants';
+import { NativeModules } from 'react-native';
+
+const LocalAudio = (NativeModules as any).LocalAudio;
 
 export interface UpdateInfo {
   latestVersion: string;
@@ -31,10 +34,13 @@ export function isNewerVersion(candidate: string, current: string): boolean {
   return false;
 }
 
-export function installedVersion(): string {
-  const native = Constants.nativeAppVersion;
-  const fallback = Constants.expoConfig?.version;
-  return (native || fallback || '0.0.0').replace(/^v/i, '');
+export async function installedVersion(): Promise<string> {
+  try {
+    const native = await LocalAudio?.getVersionName?.();
+    if (native && String(native).trim()) return String(native).trim();
+  } catch {}
+  const cfg = Constants.expoConfig?.version;
+  return (cfg || '0.0.0').replace(/^v/i, '');
 }
 
 export async function checkForUpdate(): Promise<UpdateInfo | null> {
