@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: mobile
+        working-directory: mobile/android
     permissions:
       contents: write
 
@@ -37,12 +37,11 @@ jobs:
           cache-dependency-path: mobile/package-lock.json
 
       - name: Install dependencies
+        working-directory: mobile
         run: npm ci
 
       - name: Build release APK
-        run: |
-          cd android
-          gradle assembleRelease -PreactNativeArchitectures=x86_64,arm64-v8a
+        run: ./gradlew assembleRelease -PreactNativeArchitectures=arm64-v8a,x86_64 --no-daemon
 
       - name: Get version
         id: version
