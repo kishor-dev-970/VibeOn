@@ -1,6 +1,14 @@
-import { useEffect } from 'react';
-import { requireNativeComponent, View, AppState, NativeModules } from 'react-native';
+import { useEffect, useRef } from 'react';
+import {
+  DeviceEventEmitter,
+  requireNativeComponent,
+  View,
+  AppState,
+  NativeModules,
+  dispatchCommand,
+} from 'react-native';
 import { useIsFocused } from 'expo-router';
+import { YOUTUBE_TAB_GO_HOME } from './AppTabBar';
 
 const NativePlayer: any = requireNativeComponent('BraveliteYouTubeView');
 const LocalAudio: any = (NativeModules as any).LocalAudio;
@@ -12,7 +20,8 @@ interface YouTubeWebTabProps {
 
 export function YouTubeWebTab({ url }: YouTubeWebTabProps) {
   const isFocused = useIsFocused();
-  const lastState = (require('react') as any).useRef<{
+  const nativeRef = useRef<any>(null);
+  const lastState = useRef<{
     videoId: string;
     title: string;
     paused: boolean;
@@ -51,9 +60,22 @@ export function YouTubeWebTab({ url }: YouTubeWebTabProps) {
     }
   }, [isFocused]);
 
+  // When the user taps the YouTube tab in the main app bar, go back to YouTube home.
+  useEffect(() => {
+    const sub = DeviceEventEmitter.addListener(YOUTUBE_TAB_GO_HOME, () => {
+      try {
+        if (nativeRef.current) {
+          dispatchCommand(nativeRef.current, 'loadUrl', [url]);
+        }
+      } catch {}
+    });
+    return () => sub.remove();
+  }, [url]);
+
   return (
     <View style={{ flex: 1, backgroundColor: '#0F0F0F' }}>
       <NativePlayer
+        ref={nativeRef}
         style={{ flex: 1 }}
         url={url}
         onTopPlaybackState={onTopPlaybackState}

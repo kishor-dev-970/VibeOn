@@ -30,3 +30,88 @@ ytm-primetime-promo-renderer,
 ytm-in-feed-ad-layout-renderer {
   display: none !important;
 }
+
+/* ---- Compact YouTube mobile chrome (header + tab bars) ---- */
+
+/* Slim top app header */
+tp-yt-app-header,
+ytm-masthead,
+ytd-masthead {
+  height: 48px !important;
+  min-height: 48px !important;
+  max-height: 48px !important;
+}
+ytm-masthead yt-icon,
+ytm-masthead tp-yt-paper-icon-button,
+ytd-masthead tp-yt-paper-icon-button {
+  width: 30px !important;
+  height: 30px !important;
+  min-width: 30px !important;
+  min-height: 30px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+ytm-masthead yt-formatted-string,
+ytd-masthead yt-formatted-string {
+  font-size: 13px !important;
+}
+
+/* Slim bottom tab bar (Home / Shorts / Subscriptions / You) */
+ytm-pivot-bar,
+ytm-bottom-bar,
+ytd-mini-guide-renderer {
+  height: 52px !important;
+  min-height: 52px !important;
+  max-height: 52px !important;
+}
+ytm-pivot-bar-item-renderer a,
+ytm-bottom-bar-item a {
+  padding: 2px 0 !important;
+  min-height: 44px !important;
+}
+ytm-pivot-bar-item-renderer yt-icon,
+ytm-pivot-bar-item-renderer yt-simple-formatted-string,
+ytm-bottom-bar-item yt-icon,
+ytm-bottom-bar-item yt-simple-formatted-string {
+  margin-top: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+}
+ytm-pivot-bar-item-renderer yt-icon,
+ytm-bottom-bar-item yt-icon {
+  width: 20px !important;
+  height: 20px !important;
+}
+ytm-pivot-bar-item-renderer yt-simple-formatted-string,
+ytm-bottom-bar-item yt-simple-formatted-string {
+  font-size: 10px !important;
+}
+
+/* Slim in-page chips/tab scroller (Home / Music / Gaming …) */
+yt-chip-cloud-renderer,
+ytm-chip-cloud-renderer {
+  min-height: 28px !important;
+}
+yt-chip-cloud-renderer #chips,
+ytm-chip-cloud-renderer #chips {
+  min-height: 24px !important;
+}
+yt-chip-cloud-chip-renderer,
+ytm-chip-cloud-chip-renderer {
+  min-height: 24px !important;
+  padding: 0 10px !important;
+  margin: 0 3px !important;
+}
+yt-chip-cloud-chip-renderer #text,
+yt-chip-cloud-chip-renderer yt-formatted-string,
+ytm-chip-cloud-chip-renderer #text,
+ytm-chip-cloud-chip-renderer yt-formatted-string {
+  font-size: 12px !important;
+  line-height: 24px !important;
+}
+
+/* Reduce dead space above the feed */
+ytm-rich-grid-renderer,
+ytm-item-section-renderer {
+  padding-top: 0 !important;
+}

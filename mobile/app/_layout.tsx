@@ -3,6 +3,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { AuthProvider, useAuth } from '../context/AuthContext';
 import { PlayerProvider } from '../context/PlayerContext';
+import UpdatePrompt from '../components/UpdatePrompt';
 import * as api from '../lib/api';
 
 function RootNavigator() {
@@ -23,7 +24,12 @@ function RootNavigator() {
   }, [loading, user, pathname, router]);
 
   if (loading) return null;
-  return <Stack screenOptions={{ headerShown: false }} />;
+  return (
+    <>
+      <Stack screenOptions={{ headerShown: false }} />
+      <UpdatePrompt />
+    </>
+  );
 }
 
 export default function RootLayout() {

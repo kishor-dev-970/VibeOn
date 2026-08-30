@@ -1,6 +1,8 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { DeviceEventEmitter, Pressable, StyleSheet, Text, View } from 'react-native';
 import GradientView from './GradientView';
 import { Colors, Glass, Gradients, BorderRadius, Shadows } from '../lib/theme';
+
+export const YOUTUBE_TAB_GO_HOME = 'youtubeTabPressed';
 
 export default function AppTabBar(props: any) {
   const { state, descriptors, navigation, insets } = props;
@@ -29,6 +31,9 @@ export default function AppTabBar(props: any) {
               canPreventDefault: true,
             });
             if (!isFocused && !event.defaultPrevented) navigation.navigate(route.name);
+            if (route.name === 'youtube') {
+              DeviceEventEmitter.emit(YOUTUBE_TAB_GO_HOME);
+            }
           };
           return (
             <Pressable key={route.key} onPress={onPress} style={styles.tab}>

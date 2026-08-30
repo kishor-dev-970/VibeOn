@@ -3,9 +3,11 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../context/AuthContext';
+import { checkForUpdate, installedVersion, isNewerVersion } from '../lib/update';
 import { Colors, BorderRadius, Spacing } from '../lib/theme';
 
-const GITHUB_LINK = 'https://github.com/kishor-dev-970/My_SocialMusic_Project/blob/main/mobile/social-music.apk';
+const GITHUB_LINK = 'https://github.com/kishor-dev-970/VibeOn/releases/latest';
+const APP_NAME = 'VibeOn';
 
 export default function SettingsScreen() {
   const router = useRouter();
@@ -14,14 +16,14 @@ export default function SettingsScreen() {
   const inviteFacebook = async () => {
     try {
       await Share.share({
-        message: `Join me on Social Music! My user code is ${user?.code}. Listen to music together. Download the app: ` + GITHUB_LINK,
-        title: 'Invite to Social Music',
+        message: `Join me on ${APP_NAME}! My user code is ${user?.code}. Listen to music together. Download the app: ` + GITHUB_LINK,
+        title: `Invite to ${APP_NAME}`,
       });
     } catch {}
   };
 
   const inviteWhatsApp = () => {
-    const msg = encodeURIComponent(`Join me on Social Music! My user code is ${user?.code}. Listen to music together. Download the app: ` + GITHUB_LINK);
+    const msg = encodeURIComponent(`Join me on ${APP_NAME}! My user code is ${user?.code}. Listen to music together. Download the app: ` + GITHUB_LINK);
     Linking.openURL(`whatsapp://send?text=${msg}`).catch(() =>
       Alert.alert('WhatsApp not installed')
     );
@@ -32,6 +34,26 @@ export default function SettingsScreen() {
       { text: 'Cancel', style: 'cancel' },
       { text: 'Sign out', style: 'destructive', onPress: () => signOut() },
     ]);
+  };
+
+  const handleCheckUpdate = async () => {
+    const installed = installedVersion();
+    let update: { latestVersion: string; downloadUrl: string } | null = null;
+    try {
+      update = await checkForUpdate();
+    } catch {}
+    if (update && isNewerVersion(update.latestVersion, installed)) {
+      Alert.alert(
+        `Update available · v${update.latestVersion}`,
+        `You have v${installed}. Download the latest VibeOn now?`,
+        [
+          { text: 'Later', style: 'cancel' },
+          { text: 'Download', onPress: () => Linking.openURL(update!.downloadUrl).catch(() => {}) },
+        ]
+      );
+    } else {
+      Alert.alert('Up to date', `You're on the latest version (v${installed}).`);
+    }
   };
 
   const initials = (name: string) =>
@@ -89,8 +111,13 @@ export default function SettingsScreen() {
 
         <Text style={styles.sectionTitle}>ABOUT</Text>
         <View style={styles.card}>
-          <Text style={styles.settingLabel}>Social Music</Text>
-          <Text style={styles.version}>Version 1.3.0</Text>
+          <Text style={styles.settingLabel}>{APP_NAME}</Text>
+          <Text style={styles.version}>Version {installedVersion()}</Text>
+          <View style={styles.divider} />
+          <Pressable style={styles.inviteBtn} onPress={handleCheckUpdate}>
+            <Text style={[styles.inviteIcon, { color: Colors.primary }]}>🔄</Text>
+            <Text style={styles.inviteLabel}>Check for updates</Text>
+          </Pressable>
           <View style={styles.divider} />
           <Text style={styles.about}>
             Design & Developed by KK{'\n'}
