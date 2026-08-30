@@ -37,9 +37,13 @@ jobs:
       - name: Install dependencies
         working-directory: mobile
         run: npm ci
+        env:
+          NODE_ENV: production
 
       - name: Make gradlew executable
         run: chmod +x gradlew
 
       - name: Build release APK
         run: ./gradlew assembleRelease -PreactNativeArchitectures=arm64-v8a,x86_64 --no-daemon
+        env:
+          NODE_ENV: production
