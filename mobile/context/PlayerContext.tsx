@@ -100,8 +100,13 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     const sub = DeviceEventEmitter.addListener('onStateChange', (e: any) => {
       if (!e) return;
       if (typeof e.playing === 'boolean') {
+        const wasPlaying = isPlayingRef.current;
         setIsPlaying(e.playing);
         isPlayingRef.current = e.playing;
+
+        if (wasPlaying && !e.playing && currentSongRef.current) {
+          try { api.updateNowPlaying(currentSongRef.current, false); } catch {}
+        }
       }
       if (typeof e.positionMs === 'number' && !isSeekingRef.current) {
         const secs = e.positionMs / 1000;
@@ -114,6 +119,15 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     });
     return () => sub.remove();
   }, []);
+
+  // Heartbeat: keep now_playing row alive while playing (bump every 4 min, TTL is 10 min).
+  useEffect(() => {
+    if (!isPlaying || !currentSong) return;
+    const id = setInterval(() => {
+      try { api.updateNowPlaying(currentSongRef.current!, true); } catch {}
+    }, 4 * 60 * 1000);
+    return () => clearInterval(id);
+  }, [isPlaying, currentSong]);
 
   // Auto-advance when a song finishes
   useEffect(() => {

@@ -6,7 +6,7 @@ import { corsPreflight, handleError, ok } from '@/lib/http';
 import type { FriendActivity, NowPlaying, Song } from '@/lib/types';
 import { getPresenceMs } from '@/lib/presence';
 
-const ACTIVITY_TTL_MS = 10 * 60 * 1000;
+const ACTIVITY_TTL_MS = 15 * 60 * 1000;
 
 interface NowPlayingRow {
   user_id: string;
