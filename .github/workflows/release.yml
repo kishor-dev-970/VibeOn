@@ -39,9 +39,6 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Link node_modules into android dir
-        run: ln -s ../node_modules android/node_modules
-
       - name: Make gradlew executable
         run: chmod +x android/gradlew
 
