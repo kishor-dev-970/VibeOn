@@ -31,7 +31,7 @@ export default function LoginScreen() {
     try {
       const { token, user } = await api.signInWithName(firstName.trim(), lastName.trim());
       signIn(token, user);
-      router.replace('/(tabs)');
+      router.replace('/(tabs)/youtube');
     } catch (e) {
       Alert.alert('Login failed', e instanceof Error ? e.message : String(e));
     } finally {
@@ -45,7 +45,7 @@ export default function LoginScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <Text style={styles.musicNote}>♫</Text>
-      <Text style={styles.title}>Social Music</Text>
+      <Text style={styles.title}>VibeOn</Text>
       <Text style={styles.subtitle}>
         Enter your name to join.{'\n'}Everyone in the app can see what you&apos;re playing.
       </Text>
@@ -79,7 +79,7 @@ export default function LoginScreen() {
           <Text style={styles.enterButtonText}>Enter</Text>
         </Pressable>
       )}
-      <Text style={styles.footer}>v1.3.0</Text>
+      <Text style={styles.footer}>v1.5.2</Text>
     </KeyboardAvoidingView>
   );
 }
