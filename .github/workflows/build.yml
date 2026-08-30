@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: mobile/android
+        working-directory: mobile
 
     steps:
       - uses: actions/checkout@v4
@@ -35,15 +35,15 @@ jobs:
           cache-dependency-path: mobile/package-lock.json
 
       - name: Install dependencies
-        working-directory: mobile
         run: npm ci
-        env:
-          NODE_ENV: production
+
+      - name: Link node_modules into android dir
+        run: ln -s ../node_modules android/node_modules
 
       - name: Make gradlew executable
-        run: chmod +x gradlew
+        run: chmod +x android/gradlew
 
       - name: Build release APK
-        run: ./gradlew assembleRelease -PreactNativeArchitectures=arm64-v8a,x86_64 --no-daemon
+        run: cd android && ./gradlew assembleRelease -PreactNativeArchitectures=arm64-v8a,x86_64 --no-daemon
         env:
           NODE_ENV: production
