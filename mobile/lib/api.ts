@@ -55,10 +55,19 @@ export function fetchMe(): Promise<{ user: AppUser }> {
 }
 
 export function searchSongs(q: string): Promise<{ songs: Song[] }> {
-  if (TrendingBridge?.search) {
-    return TrendingBridge.search(q).then((songs: Song[]) => ({ songs }));
-  }
-  return request(`/api/songs/search?q=${encodeURIComponent(q)}`);
+  return request(`/api/songs/search?q=${encodeURIComponent(q)}`)
+    .then((data: any) => ({ songs: data?.songs || [] }))
+    .catch(async () => {
+      if (TrendingBridge?.search) {
+        try {
+          const songs = await TrendingBridge.search(q);
+          return { songs: songs || [] };
+        } catch {
+          return { songs: [] };
+        }
+      }
+      return { songs: [] };
+    });
 }
 
 export async function updateNowPlaying(song: Song, isPlaying: boolean): Promise<unknown> {
@@ -79,15 +88,29 @@ export function fetchFriendsActivity(): Promise<{ friends: FriendActivity[] }> {
 }
 
 export function fetchTrendingSongs(): Promise<{ songs: Song[] }> {
-  if (TrendingBridge?.getTrendingIndia) {
-    if (!_trendingCache) {
-      _trendingCache = TrendingBridge.getTrendingIndia()
-        .then((songs: Song[]) => ({ songs }))
-        .catch(() => ({ songs: [] as Song[] }));
-    }
-    return _trendingCache;
+  if (!_trendingCache) {
+    _trendingCache = request('/api/songs/trending')
+      .then((data: any) => {
+        if (data?.songs && data.songs.length > 0) {
+          return { songs: data.songs };
+        }
+        throw new Error('Empty server trending');
+      })
+      .catch(async () => {
+        if (TrendingBridge?.getTrendingIndia) {
+          try {
+            const songs = await TrendingBridge.getTrendingIndia();
+            if (songs && songs.length > 0) {
+              return { songs };
+            }
+          } catch {
+            // ignore
+          }
+        }
+        return { songs: [] as Song[] };
+      });
   }
-  return request('/api/songs/trending');
+  return _trendingCache;
 }
 
 export function fetchFriendStats(friendId: string): Promise<import('./types').FriendStats> {
@@ -97,6 +120,7 @@ export function fetchFriendStats(friendId: string): Promise<import('./types').Fr
 export function fetchLiveStreams(genre: string): Promise<{ songs: Song[] }> {
   if (!_liveCache[genre]) {
     _liveCache[genre] = request(`/api/songs/live?genre=${encodeURIComponent(genre)}`)
+      .then((data: any) => ({ songs: data?.songs || [] }))
       .catch(() => ({ songs: [] as Song[] }));
   }
   return _liveCache[genre];

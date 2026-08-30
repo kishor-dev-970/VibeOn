@@ -7,15 +7,12 @@ export default function TabsLayout() {
   return (
     <Tabs
       initialRouteName="youtube"
-      lazy={false}
-      unmountOnBlur={false}
-      detachInactiveScreens={false}
-      tabBar={(props) => <AppTabBar {...props} />}
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: Colors.primary,
         tabBarInactiveTintColor: Colors.textMuted,
       }}
+      tabBar={(props) => <AppTabBar {...props} />}
     >
       <Tabs.Screen
         name="youtube"

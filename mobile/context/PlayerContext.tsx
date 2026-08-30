@@ -22,6 +22,7 @@ interface PlayerContextValue {
   isPlaying: boolean;
   showVideo: boolean;
   videoScreenActive: boolean;
+  inPipMode: boolean;
   audioCurrentTime: number;
   audioDuration: number;
   isSeeking: boolean;
@@ -50,6 +51,7 @@ const PlayerContext = createContext<PlayerContextValue>({
   isPlaying: false,
   showVideo: false,
   videoScreenActive: false,
+  inPipMode: false,
   audioCurrentTime: 0,
   audioDuration: 0,
   isSeeking: false,
@@ -76,6 +78,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [showVideo, setShowVideo] = useState(false);
   const [videoScreenActive, setVideoScreenActive] = useState(false);
+  const [inPipMode, setInPipMode] = useState(false);
   const [audioCurrentTime, setAudioCurrentTime] = useState(0);
   const [audioDuration, setAudioDuration] = useState(0);
   const [isSeeking, setIsSeeking] = useState(false);
@@ -153,6 +156,43 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     return () => sub.remove();
   }, []);
 
+  // Stop from the notification close / PiP stop button: mirror stopPlaying()
+  // so the in-app mini-player doesn't stay stale (and a second stop doesn't
+  // try to relaunch the service, which crashed the whole app before).
+  useEffect(() => {
+    const sub = DeviceEventEmitter.addListener('onPlaybackStopped', (e: any) => {
+      const stoppedId = e?.videoId;
+      const currentId = currentSongRef.current?.videoId;
+      // If a new song already started (queue auto-advance after a complete),
+      // the stopped event belongs to the old song - keep the player as-is.
+      if (stoppedId && currentId && stoppedId !== currentId) return;
+      setCurrentSong(null);
+      setIsPlaying(false);
+      setAudioCurrentTime(0);
+      setAudioDuration(0);
+      audioCurrentTimeRef.current = 0;
+      setQueue([]);
+      setQueueIndex(-1);
+      try {
+        api.clearNowPlaying();
+      } catch {}
+    });
+    return () => sub.remove();
+  }, []);
+
+  // Keep native PiP auto-enter flag synced with playback state.
+  useEffect(() => {
+    try {
+      LocalAudio?.setPipAutoEnter?.(isPlaying);
+    } catch {}
+  }, [isPlaying]);
+  useEffect(() => {
+    const sub = DeviceEventEmitter.addListener('onPipModeChanged', (e: any) => {
+      setInPipMode(!!e?.isPip);
+    });
+    return () => sub.remove();
+  }, []);
+
   const stopPlaying = useCallback(() => {
     try {
       LocalAudio?.stop?.();
@@ -199,37 +239,37 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     try { LocalAudio?.play?.(song.videoId, song.title); } catch {}
   }, []);
 
-  const playNextSong = useCallback(() => {
+  const jumpToIndex = useCallback((idx: number) => {
     const q = queueRef.current;
-    const idx = queueIndexRef.current;
-    if (idx + 1 < q.length) {
-      const nextSong = q[idx + 1];
-      setQueueIndex(idx + 1);
-      setCurrentSong(nextSong);
-      setIsPlaying(true);
-      setAudioCurrentTime(0);
-      setAudioDuration(0);
-      audioCurrentTimeRef.current = 0;
-      try { api.updateNowPlaying(nextSong, true); } catch {}
-      try { LocalAudio?.play?.(nextSong.videoId, nextSong.title); } catch {}
-    }
+    if (idx < 0 || idx >= q.length) return;
+    const song = q[idx];
+    setQueueIndex(idx);
+    setCurrentSong(song);
+    setIsPlaying(true);
+    setAudioCurrentTime(0);
+    setAudioDuration(0);
+    audioCurrentTimeRef.current = 0;
+    try { api.updateNowPlaying(song, true); } catch {}
+    try { LocalAudio?.play?.(song.videoId, song.title); } catch {}
   }, []);
 
+  const playNextSong = useCallback(() => {
+    jumpToIndex(queueIndexRef.current + 1);
+  }, [jumpToIndex]);
+
   const playPrevSong = useCallback(() => {
-    const q = queueRef.current;
-    const idx = queueIndexRef.current;
-    if (idx > 0) {
-      const prevSong = q[idx - 1];
-      setQueueIndex(idx - 1);
-      setCurrentSong(prevSong);
-      setIsPlaying(true);
-      setAudioCurrentTime(0);
-      setAudioDuration(0);
-      audioCurrentTimeRef.current = 0;
-      try { api.updateNowPlaying(prevSong, true); } catch {}
-      try { LocalAudio?.play?.(prevSong.videoId, prevSong.title); } catch {}
-    }
-  }, []);
+    jumpToIndex(queueIndexRef.current - 1);
+  }, [jumpToIndex]);
+
+  // Android PiP window previous/next buttons (route into the same queue logic).
+  useEffect(() => {
+    const sub = DeviceEventEmitter.addListener('onPipCommand', (e: any) => {
+      const cmd = e?.command;
+      if (cmd === 'next') jumpToIndex(queueIndexRef.current + 1);
+      else if (cmd === 'prev') jumpToIndex(queueIndexRef.current - 1);
+    });
+    return () => sub.remove();
+  }, [jumpToIndex]);
 
   const togglePlayPause = useCallback(() => {
     if (!currentSongRef.current) return;
@@ -263,6 +303,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       isPlaying,
       showVideo,
       videoScreenActive,
+      inPipMode,
       audioCurrentTime,
       audioDuration,
       isSeeking,
@@ -288,6 +329,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       isPlaying,
       showVideo,
       videoScreenActive,
+      inPipMode,
       audioCurrentTime,
       audioDuration,
       isSeeking,

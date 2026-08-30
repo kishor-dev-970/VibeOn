@@ -92,8 +92,8 @@ android {
         applicationId 'com.example.socialmusic'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 35
-        versionName "1.5.3"
+        versionCode 36
+        versionName "1.5.4"
 
         buildConfigField "String", "REACT_NATIVE_RELEASE_LEVEL", "\"${findProperty('reactNativeReleaseLevel') ?: 'stable'}\""
     }
@@ -133,7 +133,11 @@ android {
 
     applicationVariants.all { variant ->
         variant.outputs.all { output ->
-            output.outputFileName = "app-${variant.buildType.name}-${defaultConfig.versionName}.apk"
+            if (variant.buildType.name == "release") {
+                output.outputFileName = "VibeOn_v${defaultConfig.versionName}.apk"
+            } else {
+                output.outputFileName = "app-${variant.buildType.name}-${defaultConfig.versionName}.apk"
+            }
         }
     }
 }
@@ -165,6 +169,7 @@ dependencies {
     // Background audio playback engine (ExoPlayer / NewPipeExtractor)
     implementation("androidx.media3:media3-exoplayer:1.9.0")
     implementation("androidx.media3:media3-common:1.9.0")
+    implementation("androidx.media3:media3-session:1.9.0")
     implementation("com.github.TeamNewPipe:NewPipeExtractor:v0.26.5")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
 

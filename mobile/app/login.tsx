@@ -79,7 +79,7 @@ export default function LoginScreen() {
           <Text style={styles.enterButtonText}>Enter</Text>
         </Pressable>
       )}
-      <Text style={styles.footer}>v1.5.3</Text>
+      <Text style={styles.footer}>v1.5.4</Text>
     </KeyboardAvoidingView>
   );
 }
