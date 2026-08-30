@@ -40,6 +40,9 @@ jobs:
         working-directory: mobile
         run: npm ci
 
+      - name: Make gradlew executable
+        run: chmod +x gradlew
+
       - name: Build release APK
         run: ./gradlew assembleRelease -PreactNativeArchitectures=arm64-v8a,x86_64 --no-daemon
 
