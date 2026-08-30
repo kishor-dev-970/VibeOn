@@ -1,6 +1,8 @@
 package com.example.socialmusic
 
+import android.app.Activity
 import android.content.Context
+import android.content.pm.ActivityInfo
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
@@ -15,10 +17,11 @@ import android.webkit.WebResourceResponse
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import com.facebook.react.bridge.ReactContext
 import java.io.ByteArrayInputStream
 import java.util.concurrent.atomic.AtomicInteger
 
-class BraveliteWebView(context: Context) : android.widget.FrameLayout(context) {
+class BraveliteWebView(context: Context) : WebView(context) {
 
     data class PlaybackState(
         val videoId: String,
@@ -41,13 +44,48 @@ class BraveliteWebView(context: Context) : android.widget.FrameLayout(context) {
 
     val blockedCount = AtomicInteger(0)
 
+    private var customViewContainer: android.widget.FrameLayout? = null
+    private var customViewCallback: android.webkit.WebChromeClient.CustomViewCallback? = null
+    private var fullscreenActivity: Activity? = null
+    var useDesktop: Boolean = false
+
+    private val AUDIO_ITAGS = setOf(
+        "139", "140", "141", "249", "250", "251",
+        "256", "257", "258", "327", "599", "600"
+    )
+
+    private fun captureAudioStream(uri: android.net.Uri) {
+        val host = uri.host ?: return
+        if (!host.contains("googlevideo.com")) return
+        if (!uri.path.orEmpty().contains("videoplayback")) return
+        val itag = uri.getQueryParameter("itag") ?: return
+        val mime = uri.getQueryParameter("mime") ?: ""
+        if (!mime.startsWith("audio") && itag !in AUDIO_ITAGS) return
+
+        val builder = StringBuilder("https://").append(host).append(uri.path).append('?')
+        var first = true
+        for (key in uri.queryParameterNames) {
+            if (key == "range") continue
+            val value = uri.getQueryParameter(key) ?: continue
+            if (!first) builder.append('&')
+            first = false
+            builder.append(key).append('=').append(android.net.Uri.encode(value))
+        }
+        if (first) return
+        val url = builder.toString() + "&ratebypass=yes"
+        YouTubeAudioCapture.store(url, uri.getQueryParameter("id"))
+    }
+
     private val mainHandler = Handler(Looper.getMainLooper())
 
-    @Volatile
-    private var webView: WebView? = null
+    // This WebView instance itself is the React-managed view (no separate inner WebView
+    // is held as a child, which avoids Fabric view-tree desync on tab switches).
 
     @Volatile
     private var currentVideoId: String? = null
+
+    @Volatile
+    private var browseUrl: String? = null
 
     private var watchFallbackLoaded = false
     private var adblockJs: String? = null
@@ -72,6 +110,9 @@ class BraveliteWebView(context: Context) : android.widget.FrameLayout(context) {
     companion object {
         private const val TAG = "BraveliteWebView"
 
+        var activeFullscreen: BraveliteWebView? = null
+        var browseWebView: BraveliteWebView? = null
+
         const val DESKTOP_UA =
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36"
         const val MOBILE_UA =
@@ -86,29 +127,27 @@ class BraveliteWebView(context: Context) : android.widget.FrameLayout(context) {
     }
 
     init {
-        getOrCreateWebView()
+        setupWebView()
         loadAdblockAssets()
     }
 
-    private fun getOrCreateWebView(): WebView {
-        webView?.let { return it }
+    private fun setupWebView() {
         check(Looper.myLooper() == Looper.getMainLooper()) { "WebView must be created on the main thread" }
 
-        val wv = WebView(context)
-        wv.layoutParams = ViewGroup.LayoutParams(
+        layoutParams = ViewGroup.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT,
             ViewGroup.LayoutParams.MATCH_PARENT
         )
-        wv.setBackgroundColor(0xFF0F0F0F.toInt())
+        setBackgroundColor(0xFF0F0F0F.toInt())
         CookieManager.getInstance().setAcceptCookie(true)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            CookieManager.getInstance().setAcceptThirdPartyCookies(wv, true)
+            CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
         }
-        wv.settings.apply {
+        settings.apply {
             javaScriptEnabled = true
             domStorageEnabled = true
             mediaPlaybackRequiresUserGesture = false
-            userAgentString = MOBILE_UA
+            userAgentString = if (useDesktop) DESKTOP_UA else MOBILE_UA
             useWideViewPort = true
             loadWithOverviewMode = true
             textZoom = 100
@@ -117,13 +156,56 @@ class BraveliteWebView(context: Context) : android.widget.FrameLayout(context) {
             allowContentAccess = false
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            wv.setRendererPriorityPolicy(WebView.RENDERER_PRIORITY_BOUND, false)
+            setRendererPriorityPolicy(WebView.RENDERER_PRIORITY_BOUND, false)
         }
-        wv.addJavascriptInterface(Bridge(), "MusicAppBridge")
-        wv.webViewClient = Client()
-        addView(wv)
-        webView = wv
-        return wv
+        addJavascriptInterface(Bridge(), "MusicAppBridge")
+        webViewClient = Client()
+        webChromeClient = object : android.webkit.WebChromeClient() {
+            override fun onShowCustomView(view: android.view.View?, callback: android.webkit.WebChromeClient.CustomViewCallback?) {
+                if (view == null) return
+                customViewCallback = callback
+                activeFullscreen = this@BraveliteWebView
+                if (customViewContainer == null) {
+                    customViewContainer = android.widget.FrameLayout(context).apply {
+                        setBackgroundColor(0xFF000000.toInt())
+                    }
+                }
+                customViewContainer?.removeAllViews()
+                customViewContainer?.addView(
+                    view,
+                    android.widget.FrameLayout.LayoutParams(
+                        android.widget.FrameLayout.LayoutParams.MATCH_PARENT,
+                        android.widget.FrameLayout.LayoutParams.MATCH_PARENT
+                    )
+                )
+                // Add to the activity window content so the video SurfaceView composites
+                // correctly (reparenting into the WebView's own parent caused a black screen).
+                val activity = (context as? com.facebook.react.bridge.ReactContext)?.currentActivity
+                if (activity != null) {
+                    fullscreenActivity = activity
+                    // Force landscape while in fullscreen video.
+                    activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+                    val lp = android.view.ViewGroup.LayoutParams(
+                        android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+                        android.view.ViewGroup.LayoutParams.MATCH_PARENT
+                    )
+                    activity.runOnUiThread { activity.addContentView(customViewContainer, lp) }
+                } else {
+                    addView(
+                        customViewContainer,
+                        android.view.ViewGroup.LayoutParams(
+                            android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+                            android.view.ViewGroup.LayoutParams.MATCH_PARENT
+                        )
+                    )
+                    customViewContainer?.bringToFront()
+                }
+            }
+
+            override fun onHideCustomView() {
+                hideCustomView()
+            }
+        }
     }
 
     private fun loadAdblockAssets() {
@@ -152,26 +234,37 @@ class BraveliteWebView(context: Context) : android.widget.FrameLayout(context) {
     }
 
     private fun injectAdblock() {
-        val wv = webView ?: return
-        hideAdsCssJs?.let { wv.evaluateJavascript(it, null) }
+        hideAdsCssJs?.let { evaluateJavascript(it, null) }
         val baseJs = adblockJs ?: ""
         val script =
             ";window.__braveliteBlocked=" + blockedCount.get() + ";" +
                 STATE_HOOK_JS +
-                ";(" + baseJs + ")();"
-        wv.evaluateJavascript(script, null)
+                baseJs
+        evaluateJavascript(script, null)
+    }
+
+    fun loadBrowseUrl(url: String) {
+        Log.d(TAG, "loadBrowseUrl $url")
+        browseUrl = url
+        browseWebView = this
+        currentVideoId = null
+        hasError = false
+        watchFallbackLoaded = false
+        lastPlaybackState = null
+        this.loadUrl(url)
     }
 
     fun loadVideo(videoId: String, autoplay: Boolean) {
         if (currentVideoId == videoId && !hasError) return
         Log.d(TAG, "loadVideo $videoId autoplay=$autoplay")
+        browseUrl = null
         currentVideoId = videoId
         hasError = false
         watchFallbackLoaded = false
         lastPlaybackState = null
         // YouTube embeds require an HTTP Referer (error 153 otherwise); a direct
         // top-level WebView navigation sends none, so add one explicitly.
-        getOrCreateWebView().loadUrl(
+        this.loadUrl(
             embedUrl(videoId, autoplay),
             mapOf("Referer" to "https://www.youtube-nocookie.com/")
         )
@@ -179,9 +272,10 @@ class BraveliteWebView(context: Context) : android.widget.FrameLayout(context) {
 
     fun loadWatchFallback() {
         val id = currentVideoId ?: return
+        browseUrl = null
         if (watchFallbackLoaded) return
         watchFallbackLoaded = true
-        getOrCreateWebView().loadUrl(watchUrl(id))
+        this.loadUrl(watchUrl(id))
     }
 
     fun play() {
@@ -199,7 +293,7 @@ class BraveliteWebView(context: Context) : android.widget.FrameLayout(context) {
     fun stop() {
         watchFallbackLoaded = true
         evaluate("try{var v=document.querySelector('video');if(v){v.pause();v.src='';}}catch(e){}")
-        getOrCreateWebView().loadUrl("about:blank")
+        this.loadUrl("about:blank")
     }
 
     fun currentPlayingId(): String? = currentVideoId
@@ -207,7 +301,7 @@ class BraveliteWebView(context: Context) : android.widget.FrameLayout(context) {
     private fun evaluate(js: String) {
         mainHandler.post {
             try {
-                webView?.evaluateJavascript(js, null)
+                evaluateJavascript(js, null)
             } catch (_: Exception) {
             }
         }
@@ -261,6 +355,7 @@ class BraveliteWebView(context: Context) : android.widget.FrameLayout(context) {
                     ByteArrayInputStream(ByteArray(0))
                 )
             }
+            captureAudioStream(request.url)
             return null
         }
 
@@ -281,25 +376,57 @@ class BraveliteWebView(context: Context) : android.widget.FrameLayout(context) {
         }
 
         override fun onRenderProcessGone(view: WebView, detail: RenderProcessGoneDetail): Boolean {
-            val dying = webView
-            if (dying === view) {
-                try {
-                    (view.parent as? ViewGroup)?.removeView(view)
-                    view.destroy()
-                } catch (_: Exception) {
-                }
-                webView = null
-            }
+            Log.w(TAG, "render process gone; reloading")
             mainHandler.post {
                 val id = currentVideoId
-                if (id != null && !watchFallbackLoaded) {
-                    getOrCreateWebView().loadUrl(
+                if (browseUrl != null) {
+                    this@BraveliteWebView.loadUrl(browseUrl!!)
+                } else if (id != null && !watchFallbackLoaded) {
+                    this@BraveliteWebView.loadUrl(
                         embedUrl(id, true),
                         mapOf("Referer" to "https://www.youtube-nocookie.com/")
                     )
+                } else {
+                    this@BraveliteWebView.loadUrl("about:blank")
                 }
             }
             return true
+        }
+    }
+
+    fun exitFullscreen(): Boolean {
+        if (customViewContainer != null && (customViewContainer?.childCount ?: 0) > 0) {
+            mainHandler.post { hideCustomView() }
+            return true
+        }
+        return false
+    }
+
+    private fun hideCustomView() {
+        customViewContainer?.let { (it.parent as? ViewGroup)?.removeView(it) }
+        customViewContainer?.removeAllViews()
+        customViewCallback?.onCustomViewHidden()
+        customViewCallback = null
+        activeFullscreen = null
+        fullscreenActivity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+        fullscreenActivity = null
+    }
+
+    override fun onDetachedFromWindow() {
+        super.onDetachedFromWindow()
+        if (activeFullscreen === this) activeFullscreen = null
+        if (browseWebView === this) browseWebView = null
+    }
+
+    fun pauseVideo() {
+        mainHandler.post {
+            try {
+                evaluateJavascript(
+                    "javascript:(function(){var v=document.querySelector('video');if(v)v.pause();})();",
+                    null
+                )
+            } catch (_: Exception) {
+            }
         }
     }
 }

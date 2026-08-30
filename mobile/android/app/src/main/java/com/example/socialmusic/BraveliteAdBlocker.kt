@@ -24,7 +24,31 @@ object BraveliteAdBlocker {
         "adsafeprotected.com",
         "spotx.tv",
         "springserve.com",
-        "smartadserver.com"
+        "smartadserver.com",
+        "ad.doubleclick.net",
+        "googleads.g.doubleclick.net",
+        "pagead.l.google.com",
+        "cm.g.doubleclick.net",
+        "securepubads.g.doubleclick.net",
+        "static.doubleclick.net",
+        "pagead2.googlesyndication.com",
+        "pagead.googlesyndication.com",
+        "partner.googleadservices.com",
+        "googleads.g.doubleclick.net",
+        "optimizationguide-pa.google.com",
+        "adservice.google.com",
+        "googleadapis.com",
+        "gstaticad.com",
+        "criteo.com",
+        "criteo.net",
+        "pubmatic.com",
+        "openx.net",
+        "taboola.com",
+        "outbrain.com",
+        "scorecardresearch.com",
+        "quantserve.com",
+        "casalemedia.com",
+        "doubleclick.net"
     )
 
     private val YT_BLOCKED_PATH_PREFIXES = listOf(
@@ -35,7 +59,8 @@ object BraveliteAdBlocker {
         "/ad_break",
         "/ad_frame",
         "/youtubei/v1/ads",
-        "/api/youtube_ad_serving/"
+        "/api/youtube_ad_serving/",
+        "/youtubei/v1/player_ads"
     )
 
     fun isBlocked(uri: Uri): Boolean {

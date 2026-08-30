@@ -17,7 +17,7 @@ type Mode = 'video' | 'audio';
 
 interface Props {
   mode: Mode;
-  onModeChange: (mode: Mode) => void;
+  onModeChange?: (mode: Mode) => void;
   songs: Song[];
   loading: boolean;
   refreshing: boolean;
@@ -26,6 +26,7 @@ interface Props {
   activeSongId?: string | null;
   emptyLabel?: string;
   loadingLabel?: string;
+  showToggle?: boolean;
 }
 
 export default function MediaTabs({
@@ -39,23 +40,26 @@ export default function MediaTabs({
   activeSongId,
   emptyLabel,
   loadingLabel,
+  showToggle = true,
 }: Props) {
   return (
     <View style={styles.container}>
-      <View style={styles.toggleRow}>
-        <Pressable
-          style={[styles.toggle, mode === 'video' && styles.toggleActive]}
-          onPress={() => onModeChange('video')}
-        >
-          <Text style={[styles.toggleLabel, mode === 'video' && styles.toggleLabelActive]}>🎬 Videos</Text>
-        </Pressable>
-        <Pressable
-          style={[styles.toggle, mode === 'audio' && styles.toggleActive]}
-          onPress={() => onModeChange('audio')}
-        >
-          <Text style={[styles.toggleLabel, mode === 'audio' && styles.toggleLabelActive]}>🎵 Audio</Text>
-        </Pressable>
-      </View>
+      {showToggle && (
+        <View style={styles.toggleRow}>
+          <Pressable
+            style={[styles.toggle, mode === 'video' && styles.toggleActive]}
+            onPress={() => onModeChange?.('video')}
+          >
+            <Text style={[styles.toggleLabel, mode === 'video' && styles.toggleLabelActive]}>🎬 Videos</Text>
+          </Pressable>
+          <Pressable
+            style={[styles.toggle, mode === 'audio' && styles.toggleActive]}
+            onPress={() => onModeChange?.('audio')}
+          >
+            <Text style={[styles.toggleLabel, mode === 'audio' && styles.toggleLabelActive]}>🎵 Audio</Text>
+          </Pressable>
+        </View>
+      )}
 
       {loading ? (
         <View style={styles.loadingWrap}>

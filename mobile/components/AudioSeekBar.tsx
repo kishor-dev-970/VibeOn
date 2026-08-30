@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import { Colors } from '../lib/theme';
 import { usePlayer } from '../context/PlayerContext';
+import GradientView from './GradientView';
 
 function formatTime(sec: number): string {
   if (!isFinite(sec) || sec < 0) sec = 0;
@@ -72,23 +73,14 @@ export default function AudioSeekBar({ trackColor }: { trackColor?: string }) {
   return (
     <View style={styles.container}>
       {duration > 0 && (
-        <View
-          style={styles.barArea}
-          onLayout={onLayout}
-          {...panResponder.panHandlers}
-        >
+        <View style={styles.barArea} onLayout={onLayout} {...panResponder.panHandlers}>
           <View style={styles.track}>
-            <View
-              style={[
-                styles.fill,
-                { width: `${ratio * 100}%`, backgroundColor: trackColor ?? Colors.primary },
-              ]}
+            <GradientView
+              colors={trackColor ? [trackColor, trackColor] : ['#7C3AED', '#EC4899']}
+              style={[styles.fill, { width: `${ratio * 100}%` }]}
             />
             <View
-              style={[
-                styles.thumb,
-                { left: `${ratio * 100}%`, backgroundColor: trackColor ?? Colors.primary },
-              ]}
+              style={[styles.thumb, { left: `${ratio * 100}%`, backgroundColor: trackColor ?? Colors.primary }]}
             />
           </View>
         </View>
@@ -111,22 +103,29 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   track: {
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: Colors.bgCardLight,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: 'rgba(255,255,255,0.10)',
     justifyContent: 'center',
   },
   fill: {
-    height: 4,
-    borderRadius: 2,
+    height: 6,
+    borderRadius: 3,
+    overflow: 'hidden',
   },
   thumb: {
     position: 'absolute',
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    marginLeft: -7,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    marginLeft: -8,
     top: -5,
+    borderWidth: 2,
+    borderColor: '#fff',
+    shadowColor: '#7C3AED',
+    shadowOpacity: 0.8,
+    shadowRadius: 8,
+    elevation: 6,
   },
   timeRow: {
     flexDirection: 'row',

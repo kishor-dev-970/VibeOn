@@ -64,9 +64,9 @@
     '.ytp-skip-ad-button, ' +
     '.ytp-ad-skip-button, ' +
     '.ytp-ad-skip-button-modern, ' +
-    '.ytp-ad-skip-button-mobile, ' +
-    '.ytp-ad-skip-button-slot, ' +
-    '.videoAdUiSkipButton';
+    '.videoAdUiSkipButton, ' +
+    'button[aria-label^="Skip ad"], ' +
+    'button[aria-label^="Skip Ads"]';
 
   function player() {
     return document.getElementById('movie_player');
@@ -144,20 +144,16 @@
 
     var p = player();
     var v = videoEl();
-    var adShowing = !!(p && p.classList.contains('ad-showing'));
+    var adShowing = !!(p &&
+      (p.classList.contains('ad-showing') || p.classList.contains('ad-interrupting')));
+    var adUi = document.querySelector('.ytp-ad-player-overlay, .ytp-ad-player-overlay-skip-or-preview');
+    if (adUi) adUi.style.visibility = 'hidden';
 
     if (adShowing) {
       document
         .querySelectorAll('.ytp-ad-overlay-close-button, .ytp-ad-overlay-close-container')
         .forEach(function (b) {
           b.click();
-        });
-
-      // Brand watermark "i" popups and banner overlays should be dismissed too.
-      document
-        .querySelectorAll('.iv-branding .iv-branding-context-button, .ytp-ad-message-overlay')
-        .forEach(function (b) {
-          if (b.click) b.click();
         });
 
       var skip = document.querySelector(SKIP_SEL);
@@ -182,5 +178,5 @@
     }
   }
 
-  setInterval(killAd, 250);
+  setInterval(killAd, 60);
 })();

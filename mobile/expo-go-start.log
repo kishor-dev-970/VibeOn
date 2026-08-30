@@ -71,3 +71,24 @@ Call Stack
   HMRClient.log (node_modules\expo-router\node_modules\@expo\metro-runtime\src\metroServerLogs.native.ts:42:79)
   console.level (node_modules\react-native\Libraries\Core\setUpDeveloperTools.js:41:24)
   NativeJSLogger.addListener$argument_1 (node_modules\expo-modules-core\src\sweet\setUpJsLogger.fx.ts:51:24)
+D:\MyopenCode\mobile\node_modules\expo\node_modules\@expo\cli\build\src\utils\errors.js:130
+    throw error;
+    ^
+
+Error: ENOENT: no such file or directory, watch 'D:\MyopenCode\mobile\node_modules\.react-native-fbsdk-next-QcpLKGDw\android'
+    at FSWatcher.<computed> (node:internal/fs/watchers:254:19)
+    at Object.watch (node:fs:2539:36)
+    at #watchdir (D:\MyopenCode\mobile\node_modules\@expo\metro-file-map\build\watchers\FallbackWatcher.js:164:38)
+    at D:\MyopenCode\mobile\node_modules\@expo\metro-file-map\build\watchers\FallbackWatcher.js:268:39
+    at Walker.<anonymous> (D:\MyopenCode\mobile\node_modules\@expo\metro-file-map\build\watchers\FallbackWatcher.js:410:33)
+    at Walker.emit (node:events:508:28)
+    at D:\MyopenCode\mobile\node_modules\walker\lib\walker.js:69:16
+    at FSReqCallback.oncomplete (node:fs:185:23) {
+  errno: -4058,
+  syscall: 'watch',
+  code: 'ENOENT',
+  path: 'D:\\MyopenCode\\mobile\\node_modules\\.react-native-fbsdk-next-QcpLKGDw\\android',
+  filename: 'D:\\MyopenCode\\mobile\\node_modules\\.react-native-fbsdk-next-QcpLKGDw\\android'
+}
+
+Node.js v24.12.0

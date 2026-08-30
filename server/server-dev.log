@@ -465,3 +465,33 @@ TypeError: Invalid state: Controller is already closed
 ✓ Running next.config.ts took 558ms
 
  GET /api/health 200 in 2.0s (next.js: 1937ms, application-code: 92ms)
+⚠ Blocked cross-origin request to Next.js dev resource /_next/hmr from "192.168.1.5".
+Cross-origin access to Next.js dev resources is blocked by default for safety.
+
+To allow this host in development, add it to "allowedDevOrigins" in next.config.js and restart the dev server:
+
+// next.config.js
+module.exports = {
+  allowedDevOrigins: ['192.168.1.5'],
+}
+
+Read more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins
+ GET / 200 in 1975ms (next.js: 1345ms, application-code: 629ms)
+⚠ Blocked cross-origin request to Next.js dev resource /_next/static/chunks/node_modules_next_dist_20wefz_._.js from "192.168.1.5".
+Cross-origin access to Next.js dev resources is blocked by default for safety.
+
+To allow this host in development, add it to "allowedDevOrigins" in next.config.js and restart the dev server:
+
+// next.config.js
+module.exports = {
+  allowedDevOrigins: ['192.168.1.5'],
+}
+
+Read more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins
+ GET / 200 in 85ms (next.js: 19ms, application-code: 66ms)
+ GET / 200 in 71ms (next.js: 21ms, application-code: 50ms)
+ GET / 200 in 68ms (next.js: 16ms, application-code: 51ms)
+ GET / 200 in 93ms (next.js: 18ms, application-code: 75ms)
+ GET / 200 in 1462ms (next.js: 1098ms, application-code: 364ms)
+ POST /api/auth/signup 502 in 5.9s (next.js: 4.2s, application-code: 1694ms)
+ GET /api/health 200 in 19.9s (next.js: 19.2s, application-code: 673ms)

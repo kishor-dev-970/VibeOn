@@ -1,0 +1,19 @@
+# Secrets - never commit these
+*.jks
+*.keystore
+*.p12
+*.p8
+*.key
+@kishorkumar970__*
+# local env
+.env
+.env.local
+*.env.local
+# build artifacts
+*.apk
+
+# local logs / screenshots
+*.log
+*.log.err
+/emu-screen1.png
+mobile/expo-go-start.log

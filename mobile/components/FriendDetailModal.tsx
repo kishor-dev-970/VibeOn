@@ -99,15 +99,6 @@ export default function FriendDetailModal({ friendId, friendName, friendCode, da
               thumbnailUrl: p.thumbnailUrl,
               recent: true,
             })),
-            ...stats.songsListened.map((s) => ({
-              key: `t-${s.videoId}`,
-              videoId: s.videoId,
-              title: s.title,
-              channel: s.channel,
-              thumbnailUrl: s.thumbnailUrl,
-              playCount: s.playCount,
-              recent: false,
-            })),
           ];
           return (
             <View style={styles.content}>
@@ -132,16 +123,10 @@ export default function FriendDetailModal({ friendId, friendName, friendCode, da
                   {onPlayCurrent ? (
                     <View style={styles.playRow}>
                       <Pressable
-                        style={[styles.playBtn, { backgroundColor: Colors.primary }]}
-                        onPress={() => onPlayCurrent(stats.nowPlaying!)}
-                      >
-                        <Text style={styles.playBtnText}>▶ Video</Text>
-                      </Pressable>
-                      <Pressable
                         style={[styles.playBtn, { backgroundColor: Colors.accent }]}
                         onPress={() => onPlayCurrent(stats.nowPlaying!, true)}
                       >
-                        <Text style={styles.playBtnText}>🎵 Audio</Text>
+                        <Text style={styles.playBtnText}>🎵 Play audio</Text>
                       </Pressable>
                     </View>
                   ) : null}
@@ -172,7 +157,6 @@ export default function FriendDetailModal({ friendId, friendName, friendCode, da
                     {stats.recentPlays.length === 0 ? (
                       <Text style={[styles.none, { color: mutedColor }]}>No recent activity yet</Text>
                     ) : null}
-                    <Text style={[styles.sectionTitle, { color: mutedColor }]}>TOP SONGS THIS WEEK</Text>
                   </>
                 }
                 renderItem={({ item }) => (

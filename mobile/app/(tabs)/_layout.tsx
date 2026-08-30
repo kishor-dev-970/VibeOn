@@ -1,43 +1,48 @@
 import { Tabs } from 'expo-router';
-import { Text } from 'react-native';
 import { Colors } from '../../lib/theme';
+import { Ionicons } from '@expo/vector-icons';
+import AppTabBar from '../../components/AppTabBar';
 
 export default function TabsLayout() {
   return (
     <Tabs
+      initialRouteName="youtube"
+      lazy={false}
+      unmountOnBlur={false}
+      detachInactiveScreens={false}
+      tabBar={(props) => <AppTabBar {...props} />}
       screenOptions={{
-        headerShown: true,
-        headerStyle: { backgroundColor: Colors.tabBarBg },
-        headerTintColor: Colors.text,
-        headerTitleStyle: { fontWeight: '700' },
-        tabBarStyle: {
-          backgroundColor: Colors.tabBarBg,
-          borderTopColor: Colors.border,
-        },
+        headerShown: false,
         tabBarActiveTintColor: Colors.primary,
         tabBarInactiveTintColor: Colors.textMuted,
       }}
     >
       <Tabs.Screen
-        name="index"
+        name="youtube"
         options={{
-          title: 'Home',
-          headerShown: false,
-          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 22 }}>🏠</Text>,
+          title: 'YouTube',
+          tabBarIcon: ({ color }) => <Ionicons name="logo-youtube" color={color} size={22} />,
+        }}
+      />
+      <Tabs.Screen
+        name="home"
+        options={{
+          title: 'Songs',
+          tabBarIcon: ({ color }) => <Ionicons name="musical-notes" color={color} size={22} />,
         }}
       />
       <Tabs.Screen
         name="live"
         options={{
           title: 'Live',
-          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 22 }}>🔴</Text>,
+          tabBarIcon: ({ color }) => <Ionicons name="radio" color={color} size={22} />,
         }}
       />
       <Tabs.Screen
         name="friends"
         options={{
           title: 'Friends',
-          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 22 }}>👥</Text>,
+          tabBarIcon: ({ color }) => <Ionicons name="people" color={color} size={22} />,
         }}
       />
     </Tabs>

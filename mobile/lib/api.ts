@@ -1,8 +1,14 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { NativeModules } from 'react-native';
 import { API_URL } from './config';
 import type { AppUser, FriendActivity, Song } from './types';
 
+const TrendingBridge = (NativeModules as any).TrendingBridge;
+
 const TOKEN_KEY = 'auth.session.token';
+
+let _trendingCache: Promise<{ songs: Song[] }> | null = null;
+const _liveCache: Record<string, Promise<{ songs: Song[] }>> = {};
 
 export async function getStoredToken(): Promise<string | null> {
   return AsyncStorage.getItem(TOKEN_KEY);
@@ -49,6 +55,9 @@ export function fetchMe(): Promise<{ user: AppUser }> {
 }
 
 export function searchSongs(q: string): Promise<{ songs: Song[] }> {
+  if (TrendingBridge?.search) {
+    return TrendingBridge.search(q).then((songs: Song[]) => ({ songs }));
+  }
   return request(`/api/songs/search?q=${encodeURIComponent(q)}`);
 }
 
@@ -70,6 +79,14 @@ export function fetchFriendsActivity(): Promise<{ friends: FriendActivity[] }> {
 }
 
 export function fetchTrendingSongs(): Promise<{ songs: Song[] }> {
+  if (TrendingBridge?.getTrendingIndia) {
+    if (!_trendingCache) {
+      _trendingCache = TrendingBridge.getTrendingIndia()
+        .then((songs: Song[]) => ({ songs }))
+        .catch(() => ({ songs: [] as Song[] }));
+    }
+    return _trendingCache;
+  }
   return request('/api/songs/trending');
 }
 
@@ -78,7 +95,11 @@ export function fetchFriendStats(friendId: string): Promise<import('./types').Fr
 }
 
 export function fetchLiveStreams(genre: string): Promise<{ songs: Song[] }> {
-  return request(`/api/songs/live?genre=${encodeURIComponent(genre)}`);
+  if (!_liveCache[genre]) {
+    _liveCache[genre] = request(`/api/songs/live?genre=${encodeURIComponent(genre)}`)
+      .catch(() => ({ songs: [] as Song[] }));
+  }
+  return _liveCache[genre];
 }
 
 export function fetchAudioStream(videoId: string): Promise<{ audioUrl: string }> {
