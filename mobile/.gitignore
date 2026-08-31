@@ -36,6 +36,5 @@ yarn-error.*
 # typescript
 *.tsbuildinfo
 
-# generated native folders
+# android native folder is committed for CI; ios remains generated
 /ios
-/android

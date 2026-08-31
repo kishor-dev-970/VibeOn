@@ -1,0 +1,17 @@
+<resources>
+  <string name="app_name">VibeOn</string>
+  <string name="notification_loading">Loading audio…</string>
+  <string name="notification_text_audio">Playing audio</string>
+  <string name="playback_channel">Audio Playback</string>
+  <string name="stage_session">Resolving stream…</string>
+  <string name="stage_newpipe">Extracting via NewPipe…</string>
+  <string name="stage_innertube">Fallback to InnerTube…</string>
+  <string name="stage_player">Playing…</string>
+  <string name="notify_timeout">Could not resolve audio (timeout)</string>
+  <string name="notify_stream_failed">Playback failed</string>
+  <string name="notify_id_mismatch">No captured audio for this video</string>
+  <string name="notify_extract_failed">Could not extract audio stream</string>
+  <string name="action_play">Play</string>
+  <string name="action_pause">Pause</string>
+  <string name="action_stop">Stop</string>
+</resources>
