@@ -28,6 +28,8 @@ class BraveliteWebView(context: Context) : WebView(context) {
         val currentTime: Float,
         val paused: Boolean,
         val title: String,
+        val artist: String,
+        val thumbnailUrl: String,
         val ended: Boolean,
         val error: Boolean
     )
@@ -98,14 +100,34 @@ class BraveliteWebView(context: Context) : WebView(context) {
         "(function(){if(window.__blStateHook)return;window.__blStateHook=true;" +
             "setInterval(function(){try{" +
             "var v=document.querySelector('video');" +
+            "var paused=v?v.paused:true;" +
+            "var curTime=v?v.currentTime:-1;" +
+            "var ended=v?!!v.ended:false;" +
             "var m=(location.href||'').match(/[?&]v=([A-Za-z0-9_-]{11})/);" +
+            "var videoId=m?m[1]:'';" +
+            "if(!videoId){" +
+            "var link=document.querySelector('ytmusic-player-bar [href*=\"watch?v=\"],a.ytp-title-link[href*=\"watch?v=\"],a[href*=\"watch?v=\"]');" +
+            "if(link&&link.href){var lm=link.href.match(/[?&]v=([A-Za-z0-9_-]{11})/);if(lm)videoId=lm[1];}" +
+            "}" +
+            "var ms=(navigator&&navigator.mediaSession&&navigator.mediaSession.metadata)?navigator.mediaSession.metadata:null;" +
+            "var title=(ms&&ms.title)?ms.title:'';" +
+            "var artist=(ms&&ms.artist)?ms.artist:'';" +
+            "var artwork=(ms&&ms.artwork&&ms.artwork.length)?ms.artwork[ms.artwork.length-1].src:'';" +
+            "if(!title){" +
+            "var elT=document.querySelector('ytmusic-player-bar .title,.ytp-title-link,h1.title,.slim-video-metadata-title');" +
+            "title=elT?(elT.textContent||'').trim():(document.title||'').replace(/\\s*[-|]\\s*YouTube.*$/i,'').trim();" +
+            "}" +
+            "if(!artist){" +
+            "var elA=document.querySelector('ytmusic-player-bar .byline,ytmusic-player-bar .subtitle,.slim-owner-channel-name,.ytm-channel-thumbnail-with-header-renderer .channel-name');" +
+            "if(elA)artist=(elA.textContent||'').trim();" +
+            "}" +
+            "if(!artwork&&videoId){artwork='https://i.ytimg.com/vi/'+videoId+'/hqdefault.jpg';}" +
             "var txt=document.body?document.body.innerText:'';" +
             "var err=!!(document.querySelector('.ytp-error,.ytp-error-message')||" +
             "(txt&&/Video player configuration error|This video is unavailable|" +
             "Playback on other apps disabled|An error occurred/i.test(txt)));" +
-            "MusicAppBridge.onPlaybackState(m?m[1]:'',v?v.currentTime:-1," +
-            "(v?v.paused:true),(document.title||'').replace(/\\s*[-|]\\s*YouTube.*$/i,'')," +
-            "v?!!v.ended:false,err);}catch(e){}},500);})();"
+            "MusicAppBridge.onPlaybackState(videoId,curTime,paused,title,artist,artwork,ended,err);" +
+            "}catch(e){}},500);})();"
 
     companion object {
         private const val TAG = "BraveliteWebView"
@@ -316,6 +338,14 @@ class BraveliteWebView(context: Context) : WebView(context) {
         )
     }
 
+    fun handleGoBack(): Boolean {
+        if (canGoBack()) {
+            super.goBack()
+            return true
+        }
+        return false
+    }
+
     fun currentPlayingId(): String? = currentVideoId
 
     private fun evaluate(js: String) {
@@ -341,6 +371,8 @@ class BraveliteWebView(context: Context) : WebView(context) {
             t: Double,
             paused: Boolean,
             title: String?,
+            artist: String?,
+            thumbnailUrl: String?,
             ended: Boolean,
             error: Boolean
         ) {
@@ -351,12 +383,26 @@ class BraveliteWebView(context: Context) : WebView(context) {
                     t.toFloat(),
                     paused,
                     title ?: "",
+                    artist ?: "",
+                    thumbnailUrl ?: "",
                     ended,
                     error
                 )
                 lastPlaybackState = st
                 notifyState(st)
             }
+        }
+
+        @JavascriptInterface
+        fun onPlaybackState(
+            videoId: String?,
+            t: Double,
+            paused: Boolean,
+            title: String?,
+            ended: Boolean,
+            error: Boolean
+        ) {
+            onPlaybackState(videoId, t, paused, title, "", "", ended, error)
         }
     }
 

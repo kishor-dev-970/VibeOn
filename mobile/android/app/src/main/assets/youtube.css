@@ -115,3 +115,78 @@ ytm-rich-grid-renderer,
 ytm-item-section-renderer {
   padding-top: 0 !important;
 }
+
+/* =======================================================
+   YouTube Music - Native App Polish & Clutter Removal
+   ======================================================= */
+
+/* Pure OLED Black Background like real YT Music Android App */
+html,
+body,
+ytmusic-app,
+ytmusic-app-layout,
+ytmusic-browse-response,
+ytmusic-player-page {
+  background-color: #030303 !important;
+  color: #ffffff !important;
+}
+
+/* Hide web scrollbars for native app appearance */
+::-webkit-scrollbar {
+  display: none !important;
+}
+
+/* Hide Sign In buttons & account nags */
+ytmusic-nav-bar .sign-in-link,
+ytmusic-nav-bar tp-yt-paper-button.sign-in-button,
+ytmusic-nav-bar [aria-label*="Sign in" i],
+ytmusic-settings-button,
+ytmusic-sign-in-button-renderer,
+ytmusic-nav-bar yt-button-renderer,
+a[href*="accounts.google.com"],
+a[href*="ServiceLogin"],
+yt-button-renderer:has(a[href*="ServiceLogin"]),
+yt-button-renderer:has(a[href*="accounts.google.com"]),
+button[aria-label*="Sign in" i] {
+  display: none !important;
+}
+
+/* Hide Upgrade to Premium nags & promos */
+ytmusic-pivot-bar-item-renderer:has(a[href*="music_premium"]),
+ytmusic-pivot-bar-item-renderer:has([aria-label*="Upgrade" i]),
+ytmusic-pivot-bar-item-renderer:has([aria-label*="Premium" i]),
+ytmusic-guide-entry-renderer:has(a[href*="music_premium"]),
+a[href*="/music_premium"],
+a[aria-label*="Upgrade" i],
+ytmusic-mealbar-promo-renderer,
+ytmusic-statement-banner-renderer,
+ytmusic-banner-promo-renderer,
+ytmusic-upsell-dialog-renderer,
+tp-yt-paper-dialog:has(ytmusic-mealbar-promo-renderer),
+tp-yt-paper-dialog:has(ytmusic-upsell-dialog-renderer) {
+  display: none !important;
+}
+
+/* Hide Open in App banners */
+ytmusic-open-app-banner-renderer,
+.ytmusic-open-app-banner-renderer,
+ytm-open-app-banner-renderer,
+ytd-open-app-banner-renderer,
+#open-app-banner,
+.open-app-banner-renderer,
+yt-smart-banner,
+ytmusic-dialog-renderer:has(ytmusic-open-app-banner-renderer) {
+  display: none !important;
+}
+
+/* Hide Cast button */
+ytmusic-nav-bar tp-yt-paper-icon-button[icon*="cast" i],
+ytmusic-cast-button {
+  display: none !important;
+}
+
+/* Clean up top navbar for real app look */
+ytmusic-nav-bar {
+  background-color: rgba(3, 3, 3, 0.95) !important;
+}
+

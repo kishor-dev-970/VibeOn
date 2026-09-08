@@ -29,13 +29,6 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="live"
-        options={{
-          title: 'Live',
-          tabBarIcon: ({ color }) => <Ionicons name="radio" color={color} size={22} />,
-        }}
-      />
-      <Tabs.Screen
         name="friends"
         options={{
           title: 'Friends',

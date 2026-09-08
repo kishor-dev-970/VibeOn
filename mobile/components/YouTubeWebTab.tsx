@@ -6,14 +6,17 @@ import {
   AppState,
   NativeModules,
   UIManager,
+  BackHandler,
 } from 'react-native';
 import { useIsFocused } from 'expo-router';
 import { YOUTUBE_TAB_GO_HOME } from './AppTabBar';
+import * as api from '../lib/api';
+import type { Song } from '../lib/types';
 
 const NativePlayer: any = requireNativeComponent('BraveliteYouTubeView');
 const LocalAudio: any = (NativeModules as any).LocalAudio;
 const BraveliteFullscreen: any = (NativeModules as any).BraveliteFullscreen;
-const CMD = { loadVideo: 1, loadWatch: 2, play: 3, pause: 4, seekTo: 5, stop: 6, loadUrl: 7, nextTrack: 8, prevTrack: 9 };
+const CMD = { loadVideo: 1, loadWatch: 2, play: 3, pause: 4, seekTo: 5, stop: 6, loadUrl: 7, nextTrack: 8, prevTrack: 9, goBack: 10 };
 
 export const YTMUSIC_TAB_GO_HOME = 'ytMusicTabPressed';
 
@@ -29,16 +32,56 @@ export function YouTubeWebTab({ url }: YouTubeWebTabProps) {
     title: string;
     paused: boolean;
   }>({ videoId: '', title: '', paused: true });
+  const lastReportedState = useRef<string>('');
+  const currentSongRef = useRef<Song | null>(null);
 
   const onTopPlaybackState = (e: any) => {
     const n = e?.nativeEvent;
     if (!n) return;
+    const videoId = (n.videoId || '').trim();
+    const title = (n.title || '').trim();
+    const artist = (n.artist || '').trim() || (url.includes('music.youtube.com') ? 'YouTube Music' : 'YouTube');
+    const thumbnailUrl = n.thumbnailUrl || (videoId ? `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg` : '');
+    const paused = !!n.paused;
+    const isPlaying = !paused && !!videoId;
+
     lastState.current = {
-      videoId: n.videoId || '',
-      title: n.title || '',
-      paused: n.paused,
+      videoId,
+      title,
+      paused,
     };
+
+    if (!videoId) return;
+
+    // Detect state change: track switch or play/pause transition
+    const stateKey = `${videoId}:${isPlaying}`;
+    if (stateKey !== lastReportedState.current) {
+      lastReportedState.current = stateKey;
+      const song: Song = {
+        videoId,
+        title: title || 'Now Playing',
+        channel: artist,
+        thumbnailUrl,
+        source: 'youtube',
+      };
+      currentSongRef.current = song;
+      try {
+        api.updateNowPlaying(song, isPlaying);
+      } catch {}
+    }
   };
+
+  // Heartbeat while playing: keep now_playing row alive in Supabase (TTL is 15 min)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (!lastState.current.paused && currentSongRef.current) {
+        try {
+          api.updateNowPlaying(currentSongRef.current, true);
+        } catch {}
+      }
+    }, 4 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     const sub = AppState.addEventListener('change', (state: string) => {
@@ -96,6 +139,22 @@ export function YouTubeWebTab({ url }: YouTubeWebTabProps) {
       subNext.remove();
       subPrev.remove();
     };
+  }, [isFocused]);
+
+  // Navigate back inside WebView on Android hardware back button
+  useEffect(() => {
+    if (!isFocused) return;
+    const onBackPress = () => {
+      if (nativeRef.current) {
+        try {
+          UIManager.dispatchViewManagerCommand(nativeRef.current, CMD.goBack, []);
+          return true;
+        } catch {}
+      }
+      return false;
+    };
+    const sub = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    return () => sub.remove();
   }, [isFocused]);
 
   return (

@@ -269,6 +269,8 @@
     patchSettingsCount();
     if (tick % 8 === 0) patchBrandText();
 
+    if (tick % 6 === 0) dismissYTMusicPromos();
+
     var p = player();
     var v = videoEl();
     var adShowing = !!(p &&
@@ -302,6 +304,136 @@
     } else if (v && savedMuted !== null) {
       v.muted = savedMuted;
       savedMuted = null;
+    }
+  }
+
+  // ---- YouTube & YT Music Pull-Down-to-Refresh Controller ----
+  var refreshEl = null;
+  var refreshSvg = null;
+  var touchStartY = 0;
+  var touchStartX = 0;
+  var isPulling = false;
+  var isRefreshing = false;
+  var canPull = false;
+
+  function initPullToRefresh() {
+    if (document.getElementById('bl-pull-refresh')) return;
+    refreshEl = document.createElement('div');
+    refreshEl.id = 'bl-pull-refresh';
+    refreshEl.style.cssText =
+      'position:fixed;top:-50px;left:50%;transform:translateX(-50%);z-index:99999;' +
+      'width:40px;height:40px;border-radius:20px;background:#212121;box-shadow:0 3px 10px rgba(0,0,0,0.5);' +
+      'display:flex;align-items:center;justify-content:center;pointer-events:none;' +
+      'transition:transform 0.1s ease-out, opacity 0.2s ease;' +
+      'opacity:0;border:1px solid rgba(255,255,255,0.15);';
+
+    refreshSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    refreshSvg.setAttribute('viewBox', '0 0 24 24');
+    refreshSvg.setAttribute('width', '22');
+    refreshSvg.setAttribute('height', '22');
+    refreshSvg.style.cssText = 'fill:#ffffff;transform-origin:center;transition:transform 0.1s linear;';
+    refreshSvg.innerHTML =
+      '<path d="M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>';
+
+    refreshEl.appendChild(refreshSvg);
+    (document.body || document.documentElement).appendChild(refreshEl);
+  }
+
+  function getScrollTop() {
+    var doc = document.documentElement;
+    var body = document.body;
+    var scrollY = window.pageYOffset || (doc ? doc.scrollTop : 0) || (body ? body.scrollTop : 0) || 0;
+    var inner = document.querySelector('ytmusic-browse-response, ytm-app, #contents');
+    var innerScroll = inner ? inner.scrollTop : 0;
+    return Math.max(scrollY, innerScroll);
+  }
+
+  window.addEventListener('touchstart', function (e) {
+    if (isRefreshing) return;
+    if (e.touches && e.touches.length === 1) {
+      touchStartY = e.touches[0].clientY;
+      touchStartX = e.touches[0].clientX;
+      canPull = getScrollTop() <= 2;
+      isPulling = false;
+    }
+  }, { passive: true });
+
+  window.addEventListener('touchmove', function (e) {
+    if (!canPull || isRefreshing) return;
+    if (!refreshEl) initPullToRefresh();
+    if (!e.touches || e.touches.length !== 1) return;
+
+    var curY = e.touches[0].clientY;
+    var curX = e.touches[0].clientX;
+    var dy = curY - touchStartY;
+    var dx = Math.abs(curX - touchStartX);
+
+    if (dy > 12 && dy > dx * 1.4 && getScrollTop() <= 2) {
+      isPulling = true;
+      var pullDist = Math.min(dy * 0.42, 85);
+      var progress = Math.min(pullDist / 60, 1.0);
+      var rotation = (dy * 2.5) % 360;
+
+      refreshEl.style.opacity = String(progress);
+      refreshEl.style.transform = 'translate(-50%, ' + (pullDist + 15) + 'px)';
+      refreshSvg.style.transform = 'rotate(' + rotation + 'deg)';
+    } else if (dy < 0) {
+      canPull = false;
+      if (refreshEl && !isRefreshing) {
+        refreshEl.style.opacity = '0';
+        refreshEl.style.transform = 'translate(-50%, 0px)';
+      }
+    }
+  }, { passive: true });
+
+  window.addEventListener('touchend', function (e) {
+    if (!isPulling || isRefreshing) return;
+    isPulling = false;
+    canPull = false;
+    var curY = (e.changedTouches && e.changedTouches[0]) ? e.changedTouches[0].clientY : 0;
+    var dy = curY - touchStartY;
+
+    if (dy * 0.42 >= 55) {
+      isRefreshing = true;
+      if (refreshEl) {
+        refreshEl.style.opacity = '1';
+        refreshEl.style.transform = 'translate(-50%, 75px)';
+        refreshSvg.style.animation = 'blSpin 0.7s linear infinite';
+      }
+      setTimeout(function () {
+        location.reload();
+      }, 350);
+    } else {
+      if (refreshEl) {
+        refreshEl.style.opacity = '0';
+        refreshEl.style.transform = 'translate(-50%, 0px)';
+      }
+    }
+  }, { passive: true });
+
+  try {
+    var kf = document.createElement('style');
+    kf.textContent = '@keyframes blSpin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }';
+    (document.head || document.documentElement).appendChild(kf);
+  } catch (e) {}
+
+  function dismissYTMusicPromos() {
+    var dismissSelectors = [
+      'ytmusic-mealbar-promo-renderer button',
+      'ytmusic-upsell-dialog-renderer button',
+      'tp-yt-paper-dialog button[aria-label*="Close" i]',
+      'tp-yt-paper-dialog button[aria-label*="Dismiss" i]',
+      'tp-yt-paper-dialog button[aria-label*="No thanks" i]',
+      '.ytmusic-mealbar-promo-renderer .dismiss-button'
+    ];
+    for (var i = 0; i < dismissSelectors.length; i++) {
+      var btns = document.querySelectorAll(dismissSelectors[i]);
+      for (var j = 0; j < btns.length; j++) {
+        var btn = btns[j];
+        if (btn.offsetWidth > 0 && btn.offsetHeight > 0) {
+          try { btn.click(); } catch(e) {}
+        }
+      }
     }
   }
 

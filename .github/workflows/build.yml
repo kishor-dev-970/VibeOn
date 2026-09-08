@@ -46,5 +46,5 @@ jobs:
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: VibeOn-v1.5.6-APK
+          name: VibeOn-v1.5.7-APK
           path: mobile/android/app/build/outputs/apk/release/*.apk

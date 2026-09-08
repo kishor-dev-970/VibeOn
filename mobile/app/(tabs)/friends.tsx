@@ -11,6 +11,8 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import { usePlayer } from '../../context/PlayerContext';
 import * as api from '../../lib/api';
@@ -31,6 +33,7 @@ const initials = (name: string) =>
     .toUpperCase();
 
 export default function FriendsScreen() {
+  const router = useRouter();
   const { user, signOut } = useAuth();
   const { playSong } = usePlayer();
   const [friends, setFriends] = useState<FriendActivity[]>([]);
@@ -38,45 +41,29 @@ export default function FriendsScreen() {
   const [selectedFriend, setSelectedFriend] = useState<FriendActivity | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const load = useCallback(
-    async (showSpinner = false) => {
-      if (!user) return;
-      if (showSpinner) setRefreshing(true);
-      try {
-        const data = await api.fetchFriendsActivity();
-        setFriends(data.friends);
-      } catch (e) {
-        const message = e instanceof Error ? e.message : String(e);
-        if (message.includes('log in again') || message.includes('session')) {
-          await signOut();
-          return;
-        }
-        Alert.alert('Could not load friends', message);
-      } finally {
-        setLoading(false);
-        if (showSpinner) setRefreshing(false);
-      }
-    },
-    [user, signOut]
-  );
+  const fetchFriends = useCallback(async () => {
+    try {
+      const data = await api.fetchFriendsActivity();
+      setFriends(data.friends);
+    } catch {}
+  }, []);
 
   useEffect(() => {
-    load();
-    const id = setInterval(() => load(), POLL_INTERVAL_MS);
-    return () => clearInterval(id);
-  }, [load]);
+    fetchFriends().finally(() => setLoading(false));
+    const interval = setInterval(fetchFriends, POLL_INTERVAL_MS);
+    return () => clearInterval(interval);
+  }, [fetchFriends]);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await fetchFriends();
+    setRefreshing(false);
+  }, [fetchFriends]);
 
   const handleSignOut = () => {
-    Alert.alert('Sign out', 'Are you sure you want to sign out?', [
+    Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
       { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Sign out',
-        style: 'destructive',
-        onPress: async () => {
-          await signOut();
-          setFriends([]);
-        },
-      },
+      { text: 'Sign Out', style: 'destructive', onPress: signOut },
     ]);
   };
 
@@ -127,13 +114,22 @@ export default function FriendsScreen() {
             <Text style={styles.brand}>VibeOn</Text>
             <Text style={styles.headerTitle}>Friends</Text>
           </View>
-          <Pressable
-            onPress={handleSignOut}
-            hitSlop={10}
-            style={({ pressed }) => [styles.signOut, pressed && { opacity: 0.7 }]}
-          >
-            <Text style={[styles.signOutLabel, { color: Colors.primaryLight }]}>Sign out</Text>
-          </Pressable>
+          <View style={styles.headerActions}>
+            <Pressable
+              onPress={() => router.push('/settings')}
+              hitSlop={12}
+              style={({ pressed }) => [styles.settingsBtn, pressed && { opacity: 0.7 }]}
+            >
+              <Ionicons name="settings-outline" color={Colors.text} size={20} />
+            </Pressable>
+            <Pressable
+              onPress={handleSignOut}
+              hitSlop={10}
+              style={({ pressed }) => [styles.signOut, pressed && { opacity: 0.7 }]}
+            >
+              <Text style={[styles.signOutLabel, { color: Colors.primaryLight }]}>Sign out</Text>
+            </Pressable>
+          </View>
         </View>
         <Text style={[styles.summary, { color: Colors.textMuted }]}>
           {listeningCount > 0
@@ -194,7 +190,7 @@ export default function FriendsScreen() {
           )}
           ListEmptyComponent={<Text style={[styles.empty, { color: Colors.textMuted }]}>No one using the app yet</Text>}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={() => load(true)} tintColor={Colors.primary} />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.primary} />
           }
           contentContainerStyle={{ paddingBottom: 24, paddingHorizontal: Spacing.md, paddingTop: Spacing.sm }}
         />
@@ -243,6 +239,21 @@ const styles = StyleSheet.create({
   },
   headerTitle: { fontSize: 30, fontWeight: '800', color: Colors.text, marginTop: 2 },
   summary: { fontSize: 13, fontWeight: '600', marginTop: Spacing.sm },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  settingsBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderWidth: 1,
+    borderColor: Glass.border,
+  },
   signOut: {
     paddingHorizontal: 14,
     paddingVertical: 8,

@@ -41,7 +41,8 @@ class BraveliteWebViewManager : SimpleViewManager<BraveliteWebView>() {
         "stop" to COMMAND_STOP,
         "loadUrl" to COMMAND_LOAD_URL,
         "nextTrack" to COMMAND_NEXT,
-        "prevTrack" to COMMAND_PREV
+        "prevTrack" to COMMAND_PREV,
+        "goBack" to COMMAND_GO_BACK
     )
 
     override fun receiveCommand(view: BraveliteWebView, commandId: Int, args: ReadableArray?) {
@@ -58,6 +59,7 @@ class BraveliteWebViewManager : SimpleViewManager<BraveliteWebView>() {
             COMMAND_LOAD_URL -> view.loadBrowseUrl(args?.getString(0) ?: "")
             COMMAND_NEXT -> view.nextTrack()
             COMMAND_PREV -> view.prevTrack()
+            COMMAND_GO_BACK -> view.handleGoBack()
         }
     }
 
@@ -68,6 +70,8 @@ class BraveliteWebViewManager : SimpleViewManager<BraveliteWebView>() {
                 putDouble("currentTime", state.currentTime.toDouble())
                 putBoolean("paused", state.paused)
                 putString("title", state.title)
+                putString("artist", state.artist)
+                putString("thumbnailUrl", state.thumbnailUrl)
                 putBoolean("ended", state.ended)
                 putBoolean("error", state.error)
             }
@@ -98,5 +102,6 @@ class BraveliteWebViewManager : SimpleViewManager<BraveliteWebView>() {
         private const val COMMAND_LOAD_URL = 7
         private const val COMMAND_NEXT = 8
         private const val COMMAND_PREV = 9
+        private const val COMMAND_GO_BACK = 10
     }
 }
