@@ -1,6 +1,7 @@
 # Secrets - never commit these
 *.jks
 *.keystore
+!mobile/android/app/release.keystore
 *.p12
 *.p8
 *.key

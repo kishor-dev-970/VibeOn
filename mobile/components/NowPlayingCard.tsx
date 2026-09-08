@@ -97,16 +97,17 @@ export default function NowPlayingCard({ accent = Colors.primary }: { accent?: s
 const styles = StyleSheet.create({
   card: {
     position: 'absolute',
-    left: Spacing.sm,
-    right: Spacing.sm,
+    left: Spacing.md,
+    right: Spacing.md,
     bottom: Spacing.sm,
     borderRadius: BorderRadius.xxl,
     paddingTop: Spacing.xs,
     paddingBottom: Spacing.md,
     borderWidth: 1,
-    borderColor: Glass.border,
-    backgroundColor: Glass.bgStrong,
-    ...Shadows.soft,
+    borderColor: 'rgba(255, 255, 255, 0.14)',
+    backgroundColor: 'rgba(18, 14, 34, 0.96)',
+    ...Shadows.glow,
+    elevation: 8,
     overflow: 'hidden',
   },
   accent: {

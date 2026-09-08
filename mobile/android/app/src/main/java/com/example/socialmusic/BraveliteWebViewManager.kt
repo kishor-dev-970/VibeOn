@@ -39,7 +39,9 @@ class BraveliteWebViewManager : SimpleViewManager<BraveliteWebView>() {
         "pause" to COMMAND_PAUSE,
         "seekTo" to COMMAND_SEEK_TO,
         "stop" to COMMAND_STOP,
-        "loadUrl" to COMMAND_LOAD_URL
+        "loadUrl" to COMMAND_LOAD_URL,
+        "nextTrack" to COMMAND_NEXT,
+        "prevTrack" to COMMAND_PREV
     )
 
     override fun receiveCommand(view: BraveliteWebView, commandId: Int, args: ReadableArray?) {
@@ -54,6 +56,8 @@ class BraveliteWebViewManager : SimpleViewManager<BraveliteWebView>() {
             COMMAND_SEEK_TO -> view.seekTo(args?.getDouble(0)?.toFloat() ?: 0f)
             COMMAND_STOP -> view.stop()
             COMMAND_LOAD_URL -> view.loadBrowseUrl(args?.getString(0) ?: "")
+            COMMAND_NEXT -> view.nextTrack()
+            COMMAND_PREV -> view.prevTrack()
         }
     }
 
@@ -92,5 +96,7 @@ class BraveliteWebViewManager : SimpleViewManager<BraveliteWebView>() {
         private const val COMMAND_SEEK_TO = 5
         private const val COMMAND_STOP = 6
         private const val COMMAND_LOAD_URL = 7
+        private const val COMMAND_NEXT = 8
+        private const val COMMAND_PREV = 9
     }
 }

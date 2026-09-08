@@ -24,7 +24,7 @@ const GENRES: { key: Genre; label: string }[] = [
 ];
 
 export default function LiveScreen() {
-  const { currentSong, playSong } = usePlayer();
+  const { currentSong, playSong, playQueue } = usePlayer();
   const [genre, setGenre] = useState<Genre>('hindi');
   const [songs, setSongs] = useState<Song[]>([]);
   const [loading, setLoading] = useState(true);
@@ -55,9 +55,13 @@ export default function LiveScreen() {
   const displaySongs = songs;
   const activeSongId = currentSong?.videoId ?? null;
 
-  const handlePlay = useCallback((song: Song) => {
-    playSong(song, true);
-  }, [playSong]);
+  const handlePlay = useCallback((song: Song, index?: number) => {
+    if (typeof index === 'number' && displaySongs.length > 0) {
+      playQueue(displaySongs, index);
+    } else {
+      playSong(song, true);
+    }
+  }, [displaySongs, playQueue, playSong]);
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>

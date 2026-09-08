@@ -141,11 +141,14 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   // Auto-advance when a song finishes
   useEffect(() => {
     const sub = DeviceEventEmitter.addListener('onPlaybackComplete', (_e: any) => {
+      // 1. Advance web player if active (YouTube / YT Music)
+      DeviceEventEmitter.emit('onWebNextTrack');
+
+      // 2. Advance native audio queue
       const q = queueRef.current;
       const idx = queueIndexRef.current;
-      if (q.length === 0) return;
-      const nextIdx = idx + 1;
-      if (nextIdx < q.length) {
+      if (q.length > 0) {
+        const nextIdx = (idx + 1) % q.length;
         const nextSong = q[nextIdx];
         setQueueIndex(nextIdx);
         setCurrentSong(nextSong);
@@ -155,8 +158,6 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         audioCurrentTimeRef.current = 0;
         try { api.updateNowPlaying(nextSong, true); } catch {}
         try { LocalAudio?.play?.(nextSong.videoId, nextSong.title); } catch {}
-      } else {
-        setIsPlaying(false);
       }
     });
     return () => sub.remove();
@@ -303,22 +304,32 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const playNextSong = useCallback(() => {
-    jumpToIndex(queueIndexRef.current + 1);
+    DeviceEventEmitter.emit('onWebNextTrack');
+    const q = queueRef.current;
+    if (q.length > 0) {
+      const nextIdx = (queueIndexRef.current + 1) % q.length;
+      jumpToIndex(nextIdx);
+    }
   }, [jumpToIndex]);
 
   const playPrevSong = useCallback(() => {
-    jumpToIndex(queueIndexRef.current - 1);
+    DeviceEventEmitter.emit('onWebPrevTrack');
+    const q = queueRef.current;
+    if (q.length > 0) {
+      const prevIdx = (queueIndexRef.current - 1 + q.length) % q.length;
+      jumpToIndex(prevIdx);
+    }
   }, [jumpToIndex]);
 
   // Android PiP window previous/next buttons (route into the same queue logic).
   useEffect(() => {
     const sub = DeviceEventEmitter.addListener('onPipCommand', (e: any) => {
       const cmd = e?.command;
-      if (cmd === 'next') jumpToIndex(queueIndexRef.current + 1);
-      else if (cmd === 'prev') jumpToIndex(queueIndexRef.current - 1);
+      if (cmd === 'next') playNextSong();
+      else if (cmd === 'prev') playPrevSong();
     });
     return () => sub.remove();
-  }, [jumpToIndex]);
+  }, [playNextSong, playPrevSong]);
 
   const togglePlayPause = useCallback(() => {
     if (!currentSongRef.current) return;

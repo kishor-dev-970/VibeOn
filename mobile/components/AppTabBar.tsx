@@ -33,6 +33,8 @@ export default function AppTabBar(props: any) {
             if (!isFocused && !event.defaultPrevented) navigation.navigate(route.name);
             if (route.name === 'youtube') {
               DeviceEventEmitter.emit(YOUTUBE_TAB_GO_HOME);
+            } else if (route.name === 'home') {
+              DeviceEventEmitter.emit('ytMusicTabPressed');
             }
           };
           return (
@@ -57,25 +59,26 @@ export default function AppTabBar(props: any) {
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    backgroundColor: Glass.bgStrong,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    paddingTop: 2,
-    paddingHorizontal: 4,
+    backgroundColor: '#0c0a18',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.08)',
+    paddingTop: 6,
+    paddingHorizontal: 8,
   },
-  row: { flex: 1, flexDirection: 'row' },
-  tab: { flex: 1, alignItems: 'center' },
+  row: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around' },
+  tab: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   tabInner: {
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 1,
-    paddingVertical: 3,
-    paddingHorizontal: 6,
-    borderRadius: BorderRadius.sm,
+    gap: 3,
+    paddingVertical: 5,
+    paddingHorizontal: 12,
+    borderRadius: BorderRadius.full,
     overflow: 'hidden',
   },
   tabInnerActive: {
     ...Shadows.glow,
   },
   iconWrap: { width: 22, height: 22, alignItems: 'center', justifyContent: 'center' },
-  label: { fontSize: 10, fontWeight: '600' },
+  label: { fontSize: 11, fontWeight: '700', letterSpacing: 0.2 },
 });

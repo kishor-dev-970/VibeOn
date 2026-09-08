@@ -296,6 +296,26 @@ class BraveliteWebView(context: Context) : WebView(context) {
         this.loadUrl("about:blank")
     }
 
+    fun nextTrack() {
+        evaluate(
+            "try{" +
+            "var btn=document.querySelector('.ytp-next-button,.next-button,button[aria-label=\"Next song\"],button[aria-label=\"Next\"]');" +
+            "if(btn)btn.click();" +
+            "else{var v=document.querySelector('video');if(v&&isFinite(v.duration))v.currentTime=v.duration;}" +
+            "}catch(e){}"
+        )
+    }
+
+    fun prevTrack() {
+        evaluate(
+            "try{" +
+            "var btn=document.querySelector('.ytp-prev-button,.previous-button,button[aria-label=\"Previous song\"],button[aria-label=\"Previous\"]');" +
+            "if(btn)btn.click();" +
+            "else{var v=document.querySelector('video');if(v)v.currentTime=0;}" +
+            "}catch(e){}"
+        )
+    }
+
     fun currentPlayingId(): String? = currentVideoId
 
     private fun evaluate(js: String) {

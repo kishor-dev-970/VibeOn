@@ -236,6 +236,10 @@ class PlaybackService : Service() {
         }
     }
 
+    private val idleStopRunnable = Runnable {
+        stopQuietly()
+    }
+
     override fun onCreate() {
         super.onCreate()
         createChannel()
@@ -246,6 +250,7 @@ class PlaybackService : Service() {
         handleCommand(intent)
 
     private fun handleCommand(intent: Intent?): Int {
+        mainHandler.removeCallbacks(idleStopRunnable)
         when (intent?.action) {
             ACTION_START_AUDIO -> {
                 val id = intent.getStringExtra(EXTRA_VIDEO_ID)
@@ -324,6 +329,7 @@ class PlaybackService : Service() {
 
     private fun stopQuietly(): Int {
         resolving = false
+        mainHandler.removeCallbacks(idleStopRunnable)
         mainHandler.removeCallbacks(resolveTimeoutRunnable)
         mainHandler.removeCallbacks(positionUpdateRunnable)
         val id = currentVideoId
@@ -597,9 +603,11 @@ class PlaybackService : Service() {
             when (playbackState) {
                 Player.STATE_ENDED -> {
                     emitOnComplete()
-                    mainHandler.post { stopQuietly() }
+                    mainHandler.removeCallbacks(idleStopRunnable)
+                    mainHandler.postDelayed(idleStopRunnable, 6000L)
                 }
                 Player.STATE_READY -> {
+                    mainHandler.removeCallbacks(idleStopRunnable)
                     publishSnapshot(playing = player?.isPlaying == true, positionMs = currentPositionSafe())
                 }
             }

@@ -24,7 +24,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="home"
         options={{
-          title: 'Songs',
+          title: 'YT Music',
           tabBarIcon: ({ color }) => <Ionicons name="musical-notes" color={color} size={22} />,
         }}
       />

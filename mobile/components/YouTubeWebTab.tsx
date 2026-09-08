@@ -13,7 +13,9 @@ import { YOUTUBE_TAB_GO_HOME } from './AppTabBar';
 const NativePlayer: any = requireNativeComponent('BraveliteYouTubeView');
 const LocalAudio: any = (NativeModules as any).LocalAudio;
 const BraveliteFullscreen: any = (NativeModules as any).BraveliteFullscreen;
-const CMD = { loadVideo: 1, loadWatch: 2, play: 3, pause: 4, seekTo: 5, stop: 6, loadUrl: 7 };
+const CMD = { loadVideo: 1, loadWatch: 2, play: 3, pause: 4, seekTo: 5, stop: 6, loadUrl: 7, nextTrack: 8, prevTrack: 9 };
+
+export const YTMUSIC_TAB_GO_HOME = 'ytMusicTabPressed';
 
 interface YouTubeWebTabProps {
   url: string;
@@ -52,7 +54,7 @@ export function YouTubeWebTab({ url }: YouTubeWebTabProps) {
     return () => sub.remove();
   }, []);
 
-  // When leaving the YouTube tab (e.g. tapping Home), close fullscreen and stop the player.
+  // When leaving this tab, close fullscreen and stop video player
   useEffect(() => {
     if (!isFocused) {
       try {
@@ -61,9 +63,10 @@ export function YouTubeWebTab({ url }: YouTubeWebTabProps) {
     }
   }, [isFocused]);
 
-  // When the user taps the YouTube tab in the main app bar, go back to YouTube home.
+  // When the user taps the tab icon in the main bar, reload home URL
   useEffect(() => {
-    const sub = DeviceEventEmitter.addListener(YOUTUBE_TAB_GO_HOME, () => {
+    const eventName = url.includes('music.youtube.com') ? YTMUSIC_TAB_GO_HOME : YOUTUBE_TAB_GO_HOME;
+    const sub = DeviceEventEmitter.addListener(eventName, () => {
       try {
         if (nativeRef.current) {
           UIManager.dispatchViewManagerCommand(nativeRef.current, CMD.loadUrl, [url]);
@@ -72,6 +75,28 @@ export function YouTubeWebTab({ url }: YouTubeWebTabProps) {
     });
     return () => sub.remove();
   }, [url]);
+
+  // Forward Next/Previous button presses from PlayerContext to active web player
+  useEffect(() => {
+    const subNext = DeviceEventEmitter.addListener('onWebNextTrack', () => {
+      if (isFocused && nativeRef.current) {
+        try {
+          UIManager.dispatchViewManagerCommand(nativeRef.current, CMD.nextTrack, []);
+        } catch {}
+      }
+    });
+    const subPrev = DeviceEventEmitter.addListener('onWebPrevTrack', () => {
+      if (isFocused && nativeRef.current) {
+        try {
+          UIManager.dispatchViewManagerCommand(nativeRef.current, CMD.prevTrack, []);
+        } catch {}
+      }
+    });
+    return () => {
+      subNext.remove();
+      subPrev.remove();
+    };
+  }, [isFocused]);
 
   return (
     <View style={{ flex: 1, backgroundColor: '#0F0F0F' }}>
