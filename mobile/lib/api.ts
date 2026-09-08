@@ -1,14 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { NativeModules } from 'react-native';
 import { API_URL } from './config';
 import type { AppUser, FriendActivity, Song } from './types';
 
-const TrendingBridge = (NativeModules as any).TrendingBridge;
-
 const TOKEN_KEY = 'auth.session.token';
-
-let _trendingCache: Promise<{ songs: Song[] }> | null = null;
-const _liveCache: Record<string, Promise<{ songs: Song[] }>> = {};
 
 export async function getStoredToken(): Promise<string | null> {
   return AsyncStorage.getItem(TOKEN_KEY);
@@ -54,22 +48,6 @@ export function fetchMe(): Promise<{ user: AppUser }> {
   return request('/api/me');
 }
 
-export function searchSongs(q: string): Promise<{ songs: Song[] }> {
-  return request(`/api/songs/search?q=${encodeURIComponent(q)}`)
-    .then((data: any) => ({ songs: data?.songs || [] }))
-    .catch(async () => {
-      if (TrendingBridge?.search) {
-        try {
-          const songs = await TrendingBridge.search(q);
-          return { songs: songs || [] };
-        } catch {
-          return { songs: [] };
-        }
-      }
-      return { songs: [] };
-    });
-}
-
 export async function updateNowPlaying(song: Song, isPlaying: boolean): Promise<unknown> {
   if (!(await getStoredToken())) return undefined;
   return request('/api/activity', {
@@ -87,49 +65,7 @@ export function fetchFriendsActivity(): Promise<{ friends: FriendActivity[] }> {
   return request('/api/activity');
 }
 
-export function fetchTrendingSongs(): Promise<{ songs: Song[] }> {
-  if (!_trendingCache) {
-    _trendingCache = request('/api/songs/trending')
-      .then((data: any) => {
-        if (data?.songs && data.songs.length > 0) {
-          return { songs: data.songs };
-        }
-        throw new Error('Empty server trending');
-      })
-      .catch(async () => {
-        if (TrendingBridge?.getTrendingIndia) {
-          try {
-            const songs = await TrendingBridge.getTrendingIndia();
-            if (songs && songs.length > 0) {
-              return { songs };
-            }
-          } catch {
-            // ignore
-          }
-        }
-        return { songs: [] as Song[] };
-      });
-  }
-  return _trendingCache;
-}
-
 export function fetchFriendStats(friendId: string): Promise<import('./types').FriendStats> {
   return request(`/api/friends/${friendId}/stats`);
 }
 
-export function fetchLiveStreams(genre: string): Promise<{ songs: Song[] }> {
-  if (!_liveCache[genre]) {
-    _liveCache[genre] = request(`/api/songs/live?genre=${encodeURIComponent(genre)}`)
-      .then((data: any) => ({ songs: data?.songs || [] }))
-      .catch(() => ({ songs: [] as Song[] }));
-  }
-  return _liveCache[genre];
-}
-
-export function fetchAudioStream(videoId: string): Promise<{ audioUrl: string }> {
-  return request(`/api/songs/audio/stream?videoId=${encodeURIComponent(videoId)}`);
-}
-
-export function fetchVideoStream(videoId: string): Promise<{ videoUrl: string }> {
-  return request(`/api/songs/video/stream?videoId=${encodeURIComponent(videoId)}`);
-}

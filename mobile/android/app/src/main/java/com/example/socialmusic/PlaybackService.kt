@@ -54,6 +54,7 @@ class PlaybackService : Service() {
         private const val ACTION_START_CAPTURED = "com.example.socialmusic.action.START_CAPTURED"
         private const val ACTION_TOGGLE = "com.example.socialmusic.action.TOGGLE"
         const val ACTION_STOP_AUDIO = "com.example.socialmusic.action.STOP_AUDIO"
+        const val ACTION_KEEP_ALIVE = "com.example.socialmusic.action.KEEP_ALIVE"
         private const val ACTION_IDLE = "com.example.socialmusic.action.IDLE"
         private const val ACTION_SEEK = "com.example.socialmusic.action.SEEK"
         const val ACTION_PIP_NEXT = "com.example.socialmusic.action.PIP_NEXT"
@@ -81,6 +82,18 @@ class PlaybackService : Service() {
         private var pendingHandoff: Intent? = null
 
         fun snapshot(): Snapshot? = snapshot
+
+        fun instance(): PlaybackService? = instanceRef?.get()
+
+        fun pipNext() {
+            val svc = instanceRef?.get() ?: return
+            VibEvents.emit(svc, "onPipCommand") { it.putString("command", "next") }
+        }
+
+        fun pipPrev() {
+            val svc = instanceRef?.get() ?: return
+            VibEvents.emit(svc, "onPipCommand") { it.putString("command", "prev") }
+        }
 
         fun livePositionMs(): Long {
             val svc = instanceRef?.get() ?: return snapshot?.positionMs ?: -1L
@@ -112,6 +125,11 @@ class PlaybackService : Service() {
                 )
             } catch (_: Exception) {
             }
+        }
+
+        fun keepAlive(context: Context) {
+            val intent = Intent(context, PlaybackService::class.java).setAction(ACTION_KEEP_ALIVE)
+            deliverSafely(context, intent)
         }
 
         fun stopAudio(context: Context) {
@@ -149,7 +167,7 @@ class PlaybackService : Service() {
             // starting foreground services from the background. Doing so throws
             // RemoteServiceException / ForegroundServiceStartNotAllowedException and
             // crashes the ENTIRE app. With no live service there is nothing to control.
-            if (intent.action == ACTION_START_AUDIO || intent.action == ACTION_START_CAPTURED) {
+            if (intent.action == ACTION_START_AUDIO || intent.action == ACTION_START_CAPTURED || intent.action == ACTION_KEEP_ALIVE) {
                 try {
                     ContextCompat.startForegroundService(context, intent)
                 } catch (_: Exception) {
@@ -180,6 +198,8 @@ class PlaybackService : Service() {
     fun deliver(intent: Intent) {
         mainHandler.post { handleCommand(intent) }
     }
+
+    fun playerInstance(): ExoPlayer? = player
 
     private var player: ExoPlayer? = null
     private var mediaSession: MediaSession? = null
@@ -301,6 +321,11 @@ class PlaybackService : Service() {
                 return START_STICKY
             }
 
+            ACTION_KEEP_ALIVE -> {
+                goForeground(displayTitle.ifBlank { getString(R.string.app_name) })
+                return START_STICKY
+            }
+
             ACTION_STOP_AUDIO -> return stopQuietly()
 
             ACTION_PIP_NEXT -> {
@@ -339,6 +364,7 @@ class PlaybackService : Service() {
         currentVideoId = null
         YouTubeAudioCapture.clear()
         ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
+        MediaNotificationManager.dismiss(this)
         stopSelf()
         if (id != null) emitOnStopped(id, title)
         return START_NOT_STICKY
@@ -642,61 +668,41 @@ class PlaybackService : Service() {
 
     private fun goForeground(text: String) {
         foregroundReady = true
+        val notif = MediaNotificationManager.buildNotification(this, null)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             startForeground(
-                NOTIFICATION_ID,
-                buildNotification(text, ""),
+                MediaNotificationManager.NOTIFICATION_ID,
+                notif,
                 ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
             )
         } else {
-            startForeground(NOTIFICATION_ID, buildNotification(text, ""))
+            startForeground(MediaNotificationManager.NOTIFICATION_ID, notif)
         }
     }
 
     private fun updateNotification(title: String) {
-        getSystemService(NotificationManager::class.java)
-            .notify(NOTIFICATION_ID, buildNotification(title, getString(R.string.notification_text_audio)))
+        val id = currentVideoId ?: ""
+        val isPlaying = player?.isPlaying == true
+        val thumb = if (id.isNotEmpty()) "https://i.ytimg.com/vi/$id/hqdefault.jpg" else ""
+        MediaNotificationManager.updatePlayback(
+            context = this,
+            videoId = id,
+            title = title,
+            artist = getString(R.string.app_name),
+            thumbnailUrl = thumb,
+            isPlaying = isPlaying,
+            positionMs = currentPositionSafe()
+        )
     }
 
     private fun updateNotificationStage(title: String, stage: String) {
-        getSystemService(NotificationManager::class.java)
-            .notify(NOTIFICATION_ID, buildNotification(title, stage))
+        updateNotification(title)
     }
 
     private fun buildNotification(title: String, stage: String): android.app.Notification {
-        val contentIntent = PendingIntent.getActivity(
-            this,
-            1,
-            Intent(this, MainActivity::class.java),
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-        )
-        val toggleIntent = PendingIntent.getService(
-            this,
-            2,
-            Intent(this, PlaybackService::class.java).setAction(ACTION_TOGGLE),
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-        )
-        val stopIntent = PendingIntent.getService(
-            this,
-            3,
-            Intent(this, PlaybackService::class.java).setAction(ACTION_STOP_AUDIO),
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-        )
-        val isPlaying = player?.isPlaying == true
-        val toggleLabel =
-            if (isPlaying) getString(R.string.action_pause) else getString(R.string.action_play)
-
-        return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle(title.ifBlank { getString(R.string.app_name) })
-            .setContentText(stage.ifBlank { getString(R.string.notification_text_audio) })
-            .setSmallIcon(R.mipmap.ic_launcher)
-            .setOngoing(true)
-            .setContentIntent(contentIntent)
-            .addAction(0, toggleLabel, toggleIntent)
-            .addAction(0, getString(R.string.action_stop), stopIntent)
-            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-            .build()
+        return MediaNotificationManager.buildNotification(this, null)
     }
+
 
     private fun createChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {

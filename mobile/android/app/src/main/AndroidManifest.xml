@@ -8,6 +8,8 @@
   <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
   <uses-permission android:name="android.permission.VIBRATE"/>
   <uses-permission android:name="android.permission.WAKE_LOCK"/>
+  <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
+  <uses-permission android:name="android.permission.CHANGE_WIFI_STATE"/>
   <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="32" tools:replace="android:maxSdkVersion"/>
   <queries>
     <intent>
@@ -39,5 +41,6 @@
       </intent-filter>
     </activity>
     <service android:name=".PlaybackService" android:exported="false" android:foregroundServiceType="mediaPlayback" />
+    <receiver android:name=".MediaControlReceiver" android:exported="false" />
   </application>
 </manifest>

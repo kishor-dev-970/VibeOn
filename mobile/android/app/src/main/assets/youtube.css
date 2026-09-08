@@ -190,3 +190,98 @@ ytmusic-nav-bar {
   background-color: rgba(3, 3, 3, 0.95) !important;
 }
 
+/* =======================================================
+   YouTube Music - Audio / Video Toggle Presentation
+   ======================================================= */
+
+/* Video and artwork display */
+ytmusic-player video,
+ytmusic-player-page video,
+#player.ytmusic-player-page video,
+.html5-video-container video,
+video.html5-main-video {
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* Ensure album artwork container is always full, centered and visible */
+ytmusic-player-page #thumbnail,
+ytmusic-player-page #song-image,
+ytmusic-player-page .song-media-window,
+ytmusic-player-page .image,
+ytmusic-player-page img.ytmusic-player {
+  display: block !important;
+  visibility: visible !important;
+}
+
+/* Hide native promo toggle that asks for YouTube Premium */
+#song-video-toggle,
+ytmusic-player-page #song-video-toggle,
+.song-video-toggle,
+#av-toggle {
+  display: none !important;
+}
+
+/* --- Vibeon Song / Video Capsule Toggle (Above Player) --- */
+#vibeon-av-toggle-container {
+  position: fixed !important;
+  top: 52px !important;
+  left: 0 !important;
+  right: 0 !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  z-index: 2147483647 !important;
+  pointer-events: none !important;
+  transition: opacity 0.2s ease, transform 0.2s ease !important;
+}
+
+#vibeon-av-toggle {
+  display: inline-flex !important;
+  align-items: center !important;
+  background: rgba(22, 22, 28, 0.94) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.22) !important;
+  border-radius: 9999px !important;
+  padding: 3px !important;
+  pointer-events: auto !important;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.75) !important;
+}
+
+.vibeon-av-btn {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  padding: 6px 16px !important;
+  border-radius: 9999px !important;
+  border: none !important;
+  background: transparent !important;
+  color: #CCCCCC !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'Roboto', 'Segoe UI', sans-serif !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.2px !important;
+  cursor: pointer !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  outline: none !important;
+  -webkit-tap-highlight-color: transparent !important;
+}
+
+.vibeon-av-btn svg {
+  width: 14px !important;
+  height: 14px !important;
+  fill: currentColor !important;
+}
+
+.vibeon-av-btn.active {
+  background: #FFFFFF !important;
+  color: #0A0718 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4) !important;
+}
+
+
+
+
+

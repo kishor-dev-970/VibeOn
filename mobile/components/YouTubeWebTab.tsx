@@ -83,20 +83,6 @@ export function YouTubeWebTab({ url }: YouTubeWebTabProps) {
     return () => clearInterval(interval);
   }, []);
 
-  useEffect(() => {
-    const sub = AppState.addEventListener('change', (state: string) => {
-      if (state === 'background') {
-        const st = lastState.current;
-        if (st.videoId && !st.paused) {
-          try {
-            LocalAudio?.playCaptured?.(st.videoId, st.title);
-          } catch {}
-        }
-      }
-    });
-    return () => sub.remove();
-  }, []);
-
   // When leaving this tab, close fullscreen and stop video player
   useEffect(() => {
     if (!isFocused) {

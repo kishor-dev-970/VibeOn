@@ -134,6 +134,7 @@ class BraveliteWebView(context: Context) : WebView(context) {
 
         var activeFullscreen: BraveliteWebView? = null
         var browseWebView: BraveliteWebView? = null
+        var activePlayerView: BraveliteWebView? = null
 
         const val DESKTOP_UA =
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36"
@@ -301,11 +302,23 @@ class BraveliteWebView(context: Context) : WebView(context) {
     }
 
     fun play() {
-        evaluate("try{var v=document.querySelector('video');if(v)v.play();}catch(e){}")
+        evaluate(
+            "try{" +
+            "if(window.__blMediaHandlers&&typeof window.__blMediaHandlers['play']==='function'){window.__blMediaHandlers['play']();}" +
+            "else{var btn=document.querySelector('#play-pause-button,.play-pause-button,ytmusic-player-bar #play-pause-button,button[aria-label*=\"Play\" i]');" +
+            "if(btn)btn.click();else{var v=document.querySelector('video');if(v)v.play();}}" +
+            "}catch(e){}"
+        )
     }
 
     fun pause() {
-        evaluate("try{var v=document.querySelector('video');if(v)v.pause();}catch(e){}")
+        evaluate(
+            "try{" +
+            "if(window.__blMediaHandlers&&typeof window.__blMediaHandlers['pause']==='function'){window.__blMediaHandlers['pause']();}" +
+            "else{var btn=document.querySelector('#play-pause-button,.play-pause-button,ytmusic-player-bar #play-pause-button,button[aria-label*=\"Pause\" i]');" +
+            "if(btn)btn.click();else{var v=document.querySelector('video');if(v)v.pause();}}" +
+            "}catch(e){}"
+        )
     }
 
     fun seekTo(seconds: Float) {
@@ -321,9 +334,9 @@ class BraveliteWebView(context: Context) : WebView(context) {
     fun nextTrack() {
         evaluate(
             "try{" +
-            "var btn=document.querySelector('.ytp-next-button,.next-button,button[aria-label=\"Next song\"],button[aria-label=\"Next\"]');" +
-            "if(btn)btn.click();" +
-            "else{var v=document.querySelector('video');if(v&&isFinite(v.duration))v.currentTime=v.duration;}" +
+            "if(window.__blMediaHandlers&&typeof window.__blMediaHandlers['nexttrack']==='function'){window.__blMediaHandlers['nexttrack']();}" +
+            "else{var btn=document.querySelector('.next-button,ytmusic-player-bar .next-button,.ytp-next-button,button[aria-label*=\"Next\" i],button[aria-label*=\"Next song\" i]');" +
+            "if(btn)btn.click();else{var v=document.querySelector('video');if(v&&isFinite(v.duration))v.currentTime=v.duration;}}" +
             "}catch(e){}"
         )
     }
@@ -331,9 +344,9 @@ class BraveliteWebView(context: Context) : WebView(context) {
     fun prevTrack() {
         evaluate(
             "try{" +
-            "var btn=document.querySelector('.ytp-prev-button,.previous-button,button[aria-label=\"Previous song\"],button[aria-label=\"Previous\"]');" +
-            "if(btn)btn.click();" +
-            "else{var v=document.querySelector('video');if(v)v.currentTime=0;}" +
+            "if(window.__blMediaHandlers&&typeof window.__blMediaHandlers['previoustrack']==='function'){window.__blMediaHandlers['previoustrack']();}" +
+            "else{var btn=document.querySelector('.previous-button,ytmusic-player-bar .previous-button,.ytp-prev-button,button[aria-label*=\"Previous\" i],button[aria-label*=\"Previous song\" i]');" +
+            "if(btn)btn.click();else{var v=document.querySelector('video');if(v)v.currentTime=0;}}" +
             "}catch(e){}"
         )
     }
@@ -390,6 +403,25 @@ class BraveliteWebView(context: Context) : WebView(context) {
                 )
                 lastPlaybackState = st
                 notifyState(st)
+
+                // Update system media player notification and lockscreen controls
+                if (!videoId.isNullOrBlank() && !ended && !error) {
+                    activePlayerView = this@BraveliteWebView
+                    val actualArtist = if (!artist.isNullOrBlank()) artist else (if (browseUrl?.contains("music.youtube.com") == true) "YouTube Music" else "YouTube")
+                    val actualThumb = if (!thumbnailUrl.isNullOrBlank()) thumbnailUrl else "https://i.ytimg.com/vi/$videoId/hqdefault.jpg"
+                    MediaNotificationManager.updatePlayback(
+                        context = context.applicationContext,
+                        videoId = videoId,
+                        title = if (!title.isNullOrBlank()) title else "Now Playing",
+                        artist = actualArtist,
+                        thumbnailUrl = actualThumb,
+                        isPlaying = !paused,
+                        positionMs = (t * 1000).toLong()
+                    )
+                } else if (ended) {
+                    if (activePlayerView === this@BraveliteWebView) activePlayerView = null
+                    MediaNotificationManager.dismiss(context.applicationContext)
+                }
             }
         }
 
@@ -482,6 +514,7 @@ class BraveliteWebView(context: Context) : WebView(context) {
         super.onDetachedFromWindow()
         if (activeFullscreen === this) activeFullscreen = null
         if (browseWebView === this) browseWebView = null
+        if (activePlayerView === this) activePlayerView = null
     }
 
     fun pauseVideo() {

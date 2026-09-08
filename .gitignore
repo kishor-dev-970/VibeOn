@@ -18,3 +18,8 @@
 *.log.err
 /emu-screen1.png
 mobile/expo-go-start.log
+.opencode/
+mobile/.opencode/
+.tmp/
+graphify-out/
+mobile/graphify-out/

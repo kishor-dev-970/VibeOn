@@ -6,7 +6,6 @@ import { AuthProvider, useAuth } from '../context/AuthContext';
 import { PlayerProvider, usePlayer } from '../context/PlayerContext';
 import UpdatePrompt from '../components/UpdatePrompt';
 import GradientView from '../components/GradientView';
-import * as api from '../lib/api';
 import { Colors, Gradients } from '../lib/theme';
 
 // While the whole activity is shown in the Android Picture-in-Picture window,
@@ -47,11 +46,6 @@ function RootNavigator() {
   const { loading, user } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
-
-  useEffect(() => {
-    api.fetchTrendingSongs().catch(() => {});
-    api.fetchLiveStreams('hindi').catch(() => {});
-  }, []);
 
   useEffect(() => {
     if (loading || user) return;

@@ -2,6 +2,41 @@
   if (window.__braveliteAdSkip) return;
   window.__braveliteAdSkip = true;
 
+  // Force high-bitrate audio in YouTube & YouTube Music
+  try {
+    if (window.localStorage) {
+      localStorage.setItem('yt-player-bandwidth', '50000000'); // 50MB/s bandwidth estimate
+      localStorage.setItem('ytmusic-audio-quality', '"HIGH"');
+    }
+    if (window.sessionStorage) {
+      sessionStorage.setItem('yt-player-bandwidth', '50000000');
+      sessionStorage.setItem('ytmusic-audio-quality', '"HIGH"');
+    }
+  } catch (e) {}
+
+  try {
+    if (navigator.connection) {
+      Object.defineProperty(navigator.connection, 'downlink', { get: function () { return 100; }, configurable: true });
+      Object.defineProperty(navigator.connection, 'effectiveType', { get: function () { return '4g'; }, configurable: true });
+      Object.defineProperty(navigator.connection, 'rtt', { get: function () { return 10; }, configurable: true });
+      Object.defineProperty(navigator.connection, 'saveData', { get: function () { return false; }, configurable: true });
+    }
+  } catch (e) {}
+
+  // Intercept MediaSession action handlers registered by YouTube Music / YouTube
+  try {
+    window.__blMediaHandlers = window.__blMediaHandlers || {};
+    if (navigator && navigator.mediaSession && navigator.mediaSession.setActionHandler) {
+      var origSetActionHandler = navigator.mediaSession.setActionHandler.bind(navigator.mediaSession);
+      navigator.mediaSession.setActionHandler = function (action, handler) {
+        if (action && typeof handler === 'function') {
+          window.__blMediaHandlers[String(action).toLowerCase()] = handler;
+        }
+        return origSetActionHandler(action, handler);
+      };
+    }
+  } catch (e) {}
+
   // Spoof Page Visibility so YouTube's own scripts never pause playback
   // when the app is backgrounded or the screen is turned off.
   try {
@@ -46,6 +81,8 @@
       if (BLOCKED_EVENTS[String(type).toLowerCase()]) return;
       return origAddEventListener.call(this, type, fn, opts);
     };
+    Object.defineProperty(document, 'onvisibilitychange', { get: function () { return null; }, set: function () {}, configurable: true });
+    Object.defineProperty(window, 'onblur', { get: function () { return null; }, set: function () {}, configurable: true });
   } catch (e) {}
 
   var BL_BLOCKED = typeof window.__braveliteBlocked === 'number' ? window.__braveliteBlocked : null;
@@ -108,7 +145,7 @@
   }
 
   function compactChrome() {
-    if (!document.body) return;
+    if (!document.body || location.hostname.includes('music.youtube.com')) return;
 
     document.querySelectorAll(COMPACT_TOP_SEL).forEach(function (el) {
       var r = el.getBoundingClientRect();
@@ -200,7 +237,7 @@
   }
 
   function videoEl() {
-    return document.querySelector('video.html5-main-video');
+    return document.querySelector('video');
   }
 
   function hideEl(el) {
@@ -350,6 +387,11 @@
 
   window.addEventListener('touchstart', function (e) {
     if (isRefreshing) return;
+    var playerPage = document.querySelector('ytmusic-player-page');
+    if (playerPage && playerPage.offsetHeight > 300) {
+      canPull = false;
+      return;
+    }
     if (e.touches && e.touches.length === 1) {
       touchStartY = e.touches[0].clientY;
       touchStartX = e.touches[0].clientX;
@@ -418,24 +460,171 @@
   } catch (e) {}
 
   function dismissYTMusicPromos() {
-    var dismissSelectors = [
-      'ytmusic-mealbar-promo-renderer button',
-      'ytmusic-upsell-dialog-renderer button',
-      'tp-yt-paper-dialog button[aria-label*="Close" i]',
-      'tp-yt-paper-dialog button[aria-label*="Dismiss" i]',
-      'tp-yt-paper-dialog button[aria-label*="No thanks" i]',
-      '.ytmusic-mealbar-promo-renderer .dismiss-button'
-    ];
-    for (var i = 0; i < dismissSelectors.length; i++) {
-      var btns = document.querySelectorAll(dismissSelectors[i]);
-      for (var j = 0; j < btns.length; j++) {
-        var btn = btns[j];
-        if (btn.offsetWidth > 0 && btn.offsetHeight > 0) {
-          try { btn.click(); } catch(e) {}
+    var dialog = document.querySelector('ytmusic-mealbar-promo-renderer, ytmusic-upsell-dialog-renderer, tp-yt-paper-dialog[opened]');
+    if (!dialog) return;
+    var btn = dialog.querySelector('button[aria-label*="Dismiss" i], button[aria-label*="No thanks" i], button[aria-label*="Close" i], .dismiss-button');
+    if (btn && btn.offsetWidth > 0) {
+      try { btn.click(); } catch(e) {}
+    }
+  }
+
+  // =======================================================
+  // Song / Video Toggle Management (like official YouTube Music)
+  // =======================================================
+  var currentAVMode = 'song';
+  try {
+    currentAVMode = localStorage.getItem('vibeon_av_mode') || 'song';
+  } catch(e) {}
+
+  function applyAVMode(mode) {
+    currentAVMode = mode;
+    try {
+      localStorage.setItem('vibeon_av_mode', mode);
+    } catch(e) {}
+
+    var songBtn = document.getElementById('vibeon-btn-song');
+    var videoBtn = document.getElementById('vibeon-btn-video');
+
+    if (mode === 'video') {
+      document.body.classList.add('vibeon-video-mode');
+      document.body.classList.remove('vibeon-song-mode');
+
+      if (songBtn) songBtn.classList.remove('active');
+      if (videoBtn) videoBtn.classList.add('active');
+
+      // Click native Video tab if available
+      var vidTabs = document.querySelectorAll(
+        '#song-video-toggle [role="tab"], #av-toggle [role="tab"]'
+      );
+      for (var i = 0; i < vidTabs.length; i++) {
+        var tab = vidTabs[i];
+        var text = (tab.textContent || tab.getAttribute('aria-label') || '').trim().toLowerCase();
+        if (text.includes('video') && tab.getAttribute('aria-selected') === 'false') {
+          try { tab.click(); } catch(e) {}
+          break;
         }
+      }
+
+      // Restore playback quality to auto/highres
+      var p = document.getElementById('movie_player') || document.querySelector('.html5-video-player');
+      if (p) {
+        try {
+          if (typeof p.setPlaybackQualityRange === 'function') p.setPlaybackQualityRange('auto', 'highres');
+          else if (typeof p.setPlaybackQuality === 'function') p.setPlaybackQuality('auto');
+        } catch(e) {}
+      }
+    } else {
+      document.body.classList.add('vibeon-song-mode');
+      document.body.classList.remove('vibeon-video-mode');
+
+      if (songBtn) songBtn.classList.add('active');
+      if (videoBtn) videoBtn.classList.remove('active');
+
+      // Click native Song tab if available
+      var songTabs = document.querySelectorAll(
+        '#song-video-toggle [role="tab"], #av-toggle [role="tab"]'
+      );
+      for (var i = 0; i < songTabs.length; i++) {
+        var tab = songTabs[i];
+        var text = (tab.textContent || tab.getAttribute('aria-label') || '').trim().toLowerCase();
+        if (text.includes('song') && tab.getAttribute('aria-selected') === 'false') {
+          try { tab.click(); } catch(e) {}
+          break;
+        }
+      }
+
+      // Clamp video quality to tiny (144p) to save data while audio plays at maximum quality
+      var p = document.getElementById('movie_player') || document.querySelector('.html5-video-player');
+      if (p) {
+        try {
+          if (typeof p.setPlaybackQualityRange === 'function') p.setPlaybackQualityRange('tiny', 'tiny');
+          else if (typeof p.setPlaybackQuality === 'function') p.setPlaybackQuality('tiny');
+        } catch(e) {}
       }
     }
   }
 
-  setInterval(killAd, 60);
+  function ensureAVToggle() {
+    if (!location.hostname.includes('music.youtube.com')) return;
+
+    var toggleContainer = document.getElementById('vibeon-av-toggle-container');
+
+    // Only show the Song/Video capsule when the user is actively on the full player page
+    var playerPage = document.querySelector('ytmusic-player-page');
+    var isPlayerOpen = false;
+    if (playerPage) {
+      var uiState = playerPage.getAttribute('player-ui-state');
+      if (uiState === 'FULLSCREEN' || uiState === 'PLAYER_PAGE_OPEN') {
+        isPlayerOpen = true;
+      } else {
+        var rect = playerPage.getBoundingClientRect();
+        if (rect.height > 300 && rect.top < 250) {
+          isPlayerOpen = true;
+        }
+      }
+    }
+    if (!isPlayerOpen && (location.pathname || '').includes('/watch')) {
+      isPlayerOpen = true;
+    }
+
+    if (!isPlayerOpen) {
+      if (toggleContainer) toggleContainer.style.display = 'none';
+      return;
+    }
+
+    if (currentAVMode === 'video' && !document.body.classList.contains('vibeon-video-mode')) {
+      document.body.classList.add('vibeon-video-mode');
+      document.body.classList.remove('vibeon-song-mode');
+    } else if (currentAVMode === 'song' && !document.body.classList.contains('vibeon-song-mode')) {
+      document.body.classList.add('vibeon-song-mode');
+      document.body.classList.remove('vibeon-video-mode');
+    }
+
+    if (!toggleContainer) {
+      toggleContainer = document.createElement('div');
+      toggleContainer.id = 'vibeon-av-toggle-container';
+      toggleContainer.innerHTML =
+        '<div id="vibeon-av-toggle">' +
+          '<button type="button" id="vibeon-btn-song" class="vibeon-av-btn' + (currentAVMode === 'song' ? ' active' : '') + '">' +
+            '<svg viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>' +
+            '<span>Song</span>' +
+          '</button>' +
+          '<button type="button" id="vibeon-btn-video" class="vibeon-av-btn' + (currentAVMode === 'video' ? ' active' : '') + '">' +
+            '<svg viewBox="0 0 24 24"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg>' +
+            '<span>Video</span>' +
+          '</button>' +
+        '</div>';
+
+      (document.body || document.documentElement).appendChild(toggleContainer);
+
+      var songBtn = document.getElementById('vibeon-btn-song');
+      var videoBtn = document.getElementById('vibeon-btn-video');
+
+      if (songBtn) {
+        songBtn.addEventListener('click', function(ev) {
+          ev.preventDefault();
+          ev.stopPropagation();
+          applyAVMode('song');
+        });
+      }
+      if (videoBtn) {
+        videoBtn.addEventListener('click', function(ev) {
+          ev.preventDefault();
+          ev.stopPropagation();
+          applyAVMode('video');
+        });
+      }
+    } else {
+      toggleContainer.style.display = 'flex';
+      if (toggleContainer.parentElement !== document.body && document.body) {
+        document.body.appendChild(toggleContainer);
+      }
+    }
+  }
+
+  setInterval(function () {
+    killAd();
+    if (tick % 6 === 0) ensureAVToggle();
+  }, 60);
 })();
+
