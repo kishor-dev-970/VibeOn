@@ -13,18 +13,27 @@ export async function OPTIONS(): Promise<Response> {
   return corsPreflight();
 }
 
+// O(n) Fisher-Yates uniform shuffle
+function shuffle<T>(arr: readonly T[]): T[] {
+  const result = [...arr];
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+  return result;
+}
+
 export async function GET(_req: NextRequest): Promise<Response> {
   try {
-    const shuffled = [...SEARCH_QUERIES].sort(() => Math.random() - 0.5);
-    const queries = shuffled.slice(0, 2);
-    const all: any[] = [];
-    for (const q of queries) {
-      all.push(...(await ytdlSearch(q, 60)));
-    }
+    const queries = shuffle(SEARCH_QUERIES).slice(0, 2);
+    // Fetch queries concurrently in parallel: O(1) concurrent wait instead of sequential
+    const batches = await Promise.all(queries.map((q) => ytdlSearch(q, 50).catch(() => [])));
+    const all = batches.flat();
+
     const seen = new Set<string>();
     const unique = all
       .filter((s) => {
-        if (seen.has(s.videoId)) return false;
+        if (!s.videoId || seen.has(s.videoId)) return false;
         seen.add(s.videoId);
         return true;
       })

@@ -4,7 +4,7 @@ import android.net.Uri
 
 object BraveliteAdBlocker {
 
-    private val BLOCKED_HOST_SUFFIXES = setOf(
+    private val BLOCKED_HOSTS = hashSetOf(
         "doubleclick.net",
         "googleadservices.com",
         "googlesyndication.com",
@@ -25,18 +25,8 @@ object BraveliteAdBlocker {
         "spotx.tv",
         "springserve.com",
         "smartadserver.com",
-        "ad.doubleclick.net",
-        "googleads.g.doubleclick.net",
         "pagead.l.google.com",
-        "cm.g.doubleclick.net",
-        "securepubads.g.doubleclick.net",
-        "static.doubleclick.net",
-        "pagead2.googlesyndication.com",
-        "pagead.googlesyndication.com",
-        "partner.googleadservices.com",
-        "googleads.g.doubleclick.net",
         "optimizationguide-pa.google.com",
-        "adservice.google.com",
         "googleadapis.com",
         "gstaticad.com",
         "criteo.com",
@@ -47,8 +37,7 @@ object BraveliteAdBlocker {
         "outbrain.com",
         "scorecardresearch.com",
         "quantserve.com",
-        "casalemedia.com",
-        "doubleclick.net"
+        "casalemedia.com"
     )
 
     private val YT_BLOCKED_PATH_PREFIXES = listOf(
@@ -65,10 +54,20 @@ object BraveliteAdBlocker {
 
     fun isBlocked(uri: Uri): Boolean {
         val host = uri.host?.lowercase() ?: return false
-        if (BLOCKED_HOST_SUFFIXES.any { host == it || host.endsWith(".$it") }) return true
+
+        // O(K) where K is domain depth (at most 3-4 steps), doing O(1) HashSet lookups
+        var domain: String? = host
+        while (!domain.isNullOrEmpty()) {
+            if (BLOCKED_HOSTS.contains(domain)) return true
+            val dot = domain.indexOf('.')
+            domain = if (dot >= 0) domain.substring(dot + 1) else null
+        }
+
         if (host == "youtube.com" || host.endsWith(".youtube.com")) {
             val path = uri.path?.lowercase() ?: return false
-            if (YT_BLOCKED_PATH_PREFIXES.any { path.startsWith(it) }) return true
+            for (prefix in YT_BLOCKED_PATH_PREFIXES) {
+                if (path.startsWith(prefix)) return true
+            }
         }
         return false
     }

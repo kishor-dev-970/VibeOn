@@ -5,9 +5,37 @@ import GradientView from './GradientView';
 import { Colors, BorderRadius, Spacing, Glass, Gradients, Shadows } from '../lib/theme';
 
 export default function NowPlayingCard({ accent = Colors.primary }: { accent?: string }) {
-  const { currentSong, isPlaying, togglePlayPause, playNext, playPrevious, stopPlaying } = usePlayer();
+  const {
+    currentSong,
+    isPlaying,
+    togglePlayPause,
+    playNext,
+    playPrevious,
+    stopPlaying,
+    sleepTimerMinutes,
+    sleepTimerRemainingSec,
+    setSleepTimer,
+  } = usePlayer();
 
   if (!currentSong) return null;
+
+  const cycleSleepTimer = () => {
+    if (!sleepTimerMinutes) {
+      setSleepTimer(15);
+    } else if (sleepTimerMinutes === 15) {
+      setSleepTimer(30);
+    } else if (sleepTimerMinutes === 30) {
+      setSleepTimer(60);
+    } else {
+      setSleepTimer(null);
+    }
+  };
+
+  const formatRemaining = (sec: number) => {
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+    return `${m}:${s < 10 ? '0' : ''}${s}`;
+  };
 
   return (
     <View style={styles.card}>
@@ -28,6 +56,15 @@ export default function NowPlayingCard({ accent = Colors.primary }: { accent?: s
             {currentSong.channel}
           </Text>
         </View>
+        <Pressable
+          onPress={cycleSleepTimer}
+          hitSlop={8}
+          style={[styles.timerBtn, sleepTimerRemainingSec ? styles.timerBtnActive : null]}
+        >
+          <Text style={[styles.timerText, { color: sleepTimerRemainingSec ? Colors.primaryLight : Colors.textMuted }]}>
+            {sleepTimerRemainingSec ? `🌙 ${formatRemaining(sleepTimerRemainingSec)}` : '🌙'}
+          </Text>
+        </Pressable>
         <Pressable onPress={stopPlaying} hitSlop={12} style={styles.closeBtn}>
           <Text style={[styles.close, { color: Colors.textMuted }]}>✕</Text>
         </Pressable>
@@ -104,6 +141,24 @@ const styles = StyleSheet.create({
   channel: { fontSize: 12, marginTop: 2 },
   closeBtn: { padding: Spacing.sm },
   close: { fontSize: 16, fontWeight: '700' },
+  timerBtn: {
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: BorderRadius.full,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderWidth: 1,
+    borderColor: 'transparent',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  timerBtnActive: {
+    backgroundColor: 'rgba(99,102,241,0.2)',
+    borderColor: 'rgba(99,102,241,0.4)',
+  },
+  timerText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
   controls: {
     flexDirection: 'row',
     alignItems: 'center',

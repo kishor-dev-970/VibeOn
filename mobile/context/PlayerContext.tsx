@@ -42,6 +42,9 @@ interface PlayerContextValue {
   unregisterVideoPlayer: () => void;
   prefetchAudio: (song: Song) => Promise<void>;
   youtubeRef: React.MutableRefObject<any>;
+  sleepTimerMinutes: number | null;
+  sleepTimerRemainingSec: number | null;
+  setSleepTimer: (minutes: number | null) => void;
 }
 
 const LocalAudio = (NativeModules as any).LocalAudio;
@@ -71,6 +74,9 @@ const PlayerContext = createContext<PlayerContextValue>({
   unregisterVideoPlayer: () => {},
   prefetchAudio: async () => {},
   youtubeRef: { current: null },
+  sleepTimerMinutes: null,
+  sleepTimerRemainingSec: null,
+  setSleepTimer: () => {},
 });
 
 export function PlayerProvider({ children }: { children: React.ReactNode }) {
@@ -209,6 +215,49 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     } catch {}
   }, []);
 
+  const [sleepTimerMinutes, setSleepTimerMinutes] = useState<number | null>(null);
+  const [sleepTimerRemainingSec, setSleepTimerRemainingSec] = useState<number | null>(null);
+  const sleepTimerIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const setSleepTimer = useCallback(
+    (minutes: number | null) => {
+      if (sleepTimerIntervalRef.current) {
+        clearInterval(sleepTimerIntervalRef.current);
+        sleepTimerIntervalRef.current = null;
+      }
+      if (!minutes || minutes <= 0) {
+        setSleepTimerMinutes(null);
+        setSleepTimerRemainingSec(null);
+        return;
+      }
+      setSleepTimerMinutes(minutes);
+      const targetTime = Date.now() + minutes * 60 * 1000;
+      setSleepTimerRemainingSec(minutes * 60);
+
+      sleepTimerIntervalRef.current = setInterval(() => {
+        const remainingMs = targetTime - Date.now();
+        if (remainingMs <= 0) {
+          if (sleepTimerIntervalRef.current) {
+            clearInterval(sleepTimerIntervalRef.current);
+            sleepTimerIntervalRef.current = null;
+          }
+          setSleepTimerMinutes(null);
+          setSleepTimerRemainingSec(null);
+          stopPlaying();
+        } else {
+          setSleepTimerRemainingSec(Math.ceil(remainingMs / 1000));
+        }
+      }, 1000);
+    },
+    [stopPlaying]
+  );
+
+  useEffect(() => {
+    return () => {
+      if (sleepTimerIntervalRef.current) clearInterval(sleepTimerIntervalRef.current);
+    };
+  }, []);
+
   const playSong = useCallback((song: Song, _audioMode = true) => {
     setCurrentSong(song);
     setIsPlaying(true);
@@ -323,6 +372,9 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       unregisterVideoPlayer,
       prefetchAudio,
       youtubeRef,
+      sleepTimerMinutes,
+      sleepTimerRemainingSec,
+      setSleepTimer,
     }),
     [
       currentSong,
@@ -345,6 +397,9 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       registerVideoPlayer,
       unregisterVideoPlayer,
       prefetchAudio,
+      sleepTimerMinutes,
+      sleepTimerRemainingSec,
+      setSleepTimer,
     ]
   );
 

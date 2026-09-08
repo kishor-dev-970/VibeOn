@@ -4,6 +4,7 @@ import {
 import { useEffect, useState } from 'react';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../context/AuthContext';
+import { usePlayer } from '../context/PlayerContext';
 import { checkForUpdate, installedVersion, isNewerVersion } from '../lib/update';
 import { Colors, BorderRadius, Spacing } from '../lib/theme';
 
@@ -13,6 +14,7 @@ const APP_NAME = 'VibeOn';
 export default function SettingsScreen() {
   const router = useRouter();
   const { user, signOut } = useAuth();
+  const { sleepTimerMinutes, sleepTimerRemainingSec, setSleepTimer } = usePlayer();
   const [installed, setInstalled] = useState('…');
 
   useEffect(() => {
@@ -107,6 +109,45 @@ export default function SettingsScreen() {
           </Pressable>
         </View>
 
+        <Text style={styles.sectionTitle}>PLAYBACK & SLEEP TIMER</Text>
+        <View style={styles.card}>
+          <Text style={styles.settingLabel}>Sleep Timer</Text>
+          <Text style={styles.version}>
+            {sleepTimerRemainingSec
+              ? `Active · Stops playback in ${Math.ceil(sleepTimerRemainingSec / 60)} min`
+              : 'Automatically pause playback after set duration'}
+          </Text>
+          <View style={styles.timerRow}>
+            {[
+              { label: 'Off', val: null },
+              { label: '15m', val: 15 },
+              { label: '30m', val: 30 },
+              { label: '45m', val: 45 },
+              { label: '60m', val: 60 },
+            ].map((opt) => (
+              <Pressable
+                key={opt.label}
+                onPress={() => setSleepTimer(opt.val)}
+                style={[
+                  styles.timerChip,
+                  (sleepTimerMinutes === opt.val || (opt.val === null && !sleepTimerMinutes)) &&
+                    styles.timerChipActive,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.timerChipText,
+                    (sleepTimerMinutes === opt.val || (opt.val === null && !sleepTimerMinutes)) &&
+                      styles.timerChipTextActive,
+                  ]}
+                >
+                  {opt.label}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        </View>
+
         <Text style={styles.sectionTitle}>ACCOUNT</Text>
         <View style={styles.card}>
           <Pressable style={styles.inviteBtn} onPress={handleSignOut}>
@@ -159,4 +200,21 @@ const styles = StyleSheet.create({
   divider: { height: 1, backgroundColor: Colors.border, marginVertical: 2 },
   version: { fontSize: 13, marginTop: 4, color: Colors.textMuted },
   about: { fontSize: 14, lineHeight: 22, marginTop: 8, color: Colors.textMuted },
+  timerRow: { flexDirection: 'row', gap: 8, marginTop: Spacing.md },
+  timerChip: {
+    flex: 1,
+    paddingVertical: 8,
+    borderRadius: BorderRadius.md,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  timerChipActive: {
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primaryLight,
+  },
+  timerChipText: { fontSize: 13, fontWeight: '700', color: Colors.textMuted },
+  timerChipTextActive: { color: '#fff' },
 });

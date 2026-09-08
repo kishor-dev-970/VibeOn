@@ -52,7 +52,8 @@ export async function GET(
       .select('video_id, title, channel, thumbnail_url, played_at')
       .eq('user_id', friendUser.id as string)
       .gte('played_at', weekAgo)
-      .order('played_at', { ascending: false });
+      .order('played_at', { ascending: false })
+      .limit(300);
     if (histErr) throw new ApiError(502, 'Failed to load friend stats', 'db_error');
 
     const rows = (history ?? []) as HistoryRow[];
