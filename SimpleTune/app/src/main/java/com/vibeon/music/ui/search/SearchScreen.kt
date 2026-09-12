@@ -15,6 +15,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.FilterChip
@@ -55,6 +56,7 @@ import com.vibeon.music.ui.theme.VibeOnText
 fun SearchScreen(
     playbackManager: PlaybackManager,
     onNavigateToBrowse: (ItemType, String) -> Unit,
+    onBack: () -> Unit = {},
     viewModel: SearchViewModel = hiltViewModel(),
 ) {
     val query by viewModel.query.collectAsState()
@@ -64,13 +66,22 @@ fun SearchScreen(
 
     GradientBackground {
         Column(modifier = Modifier.fillMaxSize()) {
-            Text(
-                text = "Search",
-                modifier = Modifier.padding(horizontal = 20.dp, vertical = 24.dp),
-                color = VibeOnText,
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.ExtraBold,
-            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 8.dp, top = 16.dp, end = 20.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                IconButton(onClick = onBack) {
+                    Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back", tint = VibeOnText)
+                }
+                Text(
+                    text = "Search",
+                    color = VibeOnText,
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.ExtraBold,
+                )
+            }
 
             OutlinedTextField(
                 value = query,

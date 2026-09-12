@@ -42,16 +42,24 @@ class MusicRepository @Inject constructor(
     suspend fun fetchHome(params: String? = null): HomeSectionResponse? {
         val home = client.browse("FEmusic_home", params)?.let { InnerTubeParser.parseHome(it) }
         if (params != null || home == null) return home
-        // The default feed is personalized and can be sparse for new accounts; always
-        // surface the New releases albums section so the home shows a rich mix.
+        // The default feed is personalized and can be sparse for new accounts. Pin
+        // curated genre sections (from the chip feeds) on top so Home always shows a
+        // rich, varied mix: pop / English hits, romantic (Hindi) hits, and more.
         return try {
-            val nr = client.browse("FEmusic_new_releases")?.let { InnerTubeParser.parseNewReleases(it) }
-            val sections = home.sections.toMutableList()
-            if (nr != null && nr.items.isNotEmpty() &&
-                sections.none { it.title.equals("New releases", ignoreCase = true) }
-            ) {
-                sections.add(0, nr)
+            val curated = mutableListOf<HomeSection>()
+            for (label in listOf("Energize", "Romance", "Feel good")) {
+                val chip = home.chips.firstOrNull { it.label == label } ?: continue
+                val genreHome = client.browse("FEmusic_home", chip.params)?.let { InnerTubeParser.parseHome(it) } ?: continue
+                for (section in genreHome.sections.filter { it.items.isNotEmpty() }.take(3)) {
+                    if (curated.none { it.title.equals(section.title, ignoreCase = true) }) {
+                        curated.add(section)
+                    }
+                }
             }
+            val sections = (curated + home.sections)
+                .filter { it.items.isNotEmpty() }
+                .distinctBy { it.title }
+                .toMutableList()
             home.copy(sections = sections)
         } catch (_: Exception) {
             home

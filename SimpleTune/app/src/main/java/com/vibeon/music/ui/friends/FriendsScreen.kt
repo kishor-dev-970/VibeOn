@@ -176,6 +176,15 @@ private fun FriendCard(friend: FriendActivity, onClick: () -> Unit) {
         }
         Spacer(Modifier.height(10.dp))
         NowPlayingRow(nowPlaying = friend.nowPlaying)
+        val lastSeenText = formatLastSeen(friend.user.lastActive ?: friend.nowPlaying?.updatedAt, isOnline)
+        if (lastSeenText != null) {
+            Text(
+                text = lastSeenText,
+                modifier = Modifier.padding(start = 2.dp, top = 6.dp),
+                color = VibeOnTextSubtle,
+                style = MaterialTheme.typography.labelSmall,
+            )
+        }
     }
 }
 
@@ -213,17 +222,24 @@ private fun NowPlayingRow(nowPlaying: NowPlaying?) {
                 }
             }
             Spacer(Modifier.width(8.dp))
-            if (nowPlaying.isPlaying) {
+            Text(
+                text = if (nowPlaying.isPlaying) "● Live" else "❙❙ Paused",
+                color = if (nowPlaying.isPlaying) VibeOnSuccess else VibeOnTextMuted,
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold,
+            )
+        } else if (nowPlaying != null) {
+            Column(Modifier.weight(1f)) {
                 Text(
-                    text = "● Live",
-                    color = VibeOnSuccess,
-                    style = MaterialTheme.typography.labelSmall,
+                    text = "Playing something",
+                    color = VibeOnText,
+                    style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Bold,
+                    maxLines = 1,
                 )
-            } else {
                 Text(
-                    text = "❙❙ Paused",
-                    color = VibeOnTextMuted,
+                    text = if (nowPlaying.isPlaying) "● Live" else "❙❙ Paused",
+                    color = if (nowPlaying.isPlaying) VibeOnSuccess else VibeOnTextMuted,
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.Bold,
                 )
@@ -235,6 +251,18 @@ private fun NowPlayingRow(nowPlaying: NowPlaying?) {
                 style = MaterialTheme.typography.bodySmall,
             )
         }
+    }
+}
+
+private fun formatLastSeen(lastActive: Long?, isOnline: Boolean): String? {
+    if (isOnline) return "Active now"
+    if (lastActive == null) return null
+    val delta = (System.currentTimeMillis() - lastActive).coerceAtLeast(0)
+    return when {
+        delta < 60_000 -> "Active just now"
+        delta < 60 * 60_000 -> "Last seen ${(delta / 60_000)} min ago"
+        delta < 24 * 60 * 60_000 -> "Last seen ${(delta / 3_600_000)} hr ago"
+        else -> "Last seen ${(delta / 86_400_000)} d ago"
     }
 }
 

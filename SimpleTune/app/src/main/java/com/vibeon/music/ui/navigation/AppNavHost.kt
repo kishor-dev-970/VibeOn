@@ -91,6 +91,7 @@ private fun MainNavHost(playbackManager: PlaybackManager) {
                 HomeScreen(
                     playbackManager = playbackManager,
                     onNavigateToBrowse = { type, browseId -> openBrowse(type, browseId) },
+                    onOpenSearch = { navController.navigate(Screen.Search.route) },
                     onOpenNowPlaying = { navController.navigate(Screen.NowPlaying.route) },
                 )
             }
@@ -99,6 +100,7 @@ private fun MainNavHost(playbackManager: PlaybackManager) {
                 SearchScreen(
                     playbackManager = playbackManager,
                     onNavigateToBrowse = { type, browseId -> openBrowse(type, browseId) },
+                    onBack = { navController.popBackStack() },
                 )
             }
             composable(Screen.Library.route) {

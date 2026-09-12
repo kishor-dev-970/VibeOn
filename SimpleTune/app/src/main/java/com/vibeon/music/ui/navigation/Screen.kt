@@ -22,8 +22,7 @@ sealed class Screen(val route: String) {
 }
 
 enum class BottomTab(val route: String, val label: String) {
-    Home("home", "Home"),
-    Search("search", "Search"),
     Library("library", "Library"),
+    Home("home", "Home"),
     Friends("friends", "Friends"),
 }

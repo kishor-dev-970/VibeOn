@@ -323,29 +323,6 @@ internal object InnerTubeParser {
         return HomeSectionResponse(listOf(HomeSection(title ?: "More", items, more, layout)), more, emptyList())
     }
 
-    fun parseNewReleases(body: JsonObject): HomeSection? {
-        val tabRenderer = (body.obj("contents")?.obj("singleColumnBrowseResultsRenderer")
-            ?.arr("tabs")?.firstOrNull() as? JsonObject)?.obj("tabRenderer") ?: return null
-        val list = tabRenderer.obj("content")?.obj("sectionListRenderer") ?: return null
-        val sections = list.arr("contents").orEmpty()
-        // The "Albums & singles" carousel carries the actual new release albums; fall
-        // back to the album gridRenderer (usually just the "New Release Mix" auto-mix).
-        for (section in sections) {
-            val carousel = (section as? JsonObject)?.obj("musicCarouselShelfRenderer") ?: continue
-            val items = carouselItems(carousel.arr("contents"))
-            if (items.isEmpty()) continue
-            return HomeSection("New releases", items.take(14), null, HomeSectionLayout.GRID)
-        }
-        for (section in sections) {
-            val grid = (section as? JsonObject)?.obj("gridRenderer") ?: continue
-            val items = grid.arr("items").orEmpty()
-                .mapNotNull { (it as? JsonObject)?.let { o -> browseItemOf(o) } }
-            if (items.isEmpty()) continue
-            return HomeSection("New releases", items.take(14), null, HomeSectionLayout.GRID)
-        }
-        return null
-    }
-
     // ---------- Search ----------
 
     fun parseSearch(body: JsonObject): SearchResults {

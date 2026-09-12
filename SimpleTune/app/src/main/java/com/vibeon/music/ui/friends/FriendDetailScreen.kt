@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Close
@@ -29,6 +30,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -231,7 +233,10 @@ private fun NowPlayingCard(nowPlaying: NowPlaying, onPlay: () -> Unit) {
             Spacer(Modifier.width(8.dp))
             Text(
                 text = "Play audio",
-                modifier = Modifier,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(8.dp))
+                    .clickable(onClick = onPlay)
+                    .padding(horizontal = 6.dp, vertical = 4.dp),
                 color = VibeOnAccent,
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.Bold,
@@ -241,13 +246,12 @@ private fun NowPlayingCard(nowPlaying: NowPlaying, onPlay: () -> Unit) {
 }
 
 private fun playFriendSong(nowPlaying: NowPlaying, playbackManager: PlaybackManager) {
-    nowPlaying.videoId?.let { videoId ->
-        val song = Song(
-            videoId = videoId,
-            title = nowPlaying.songTitle ?: "Unknown",
-            artists = listOf(com.vibeon.music.domain.model.Artist(name = nowPlaying.artistName ?: "")),
-            thumbnailUrl = nowPlaying.artworkUrl,
-        )
-        playbackManager.playSong(song)
-    }
+    val videoId = nowPlaying.videoId ?: return
+    val song = Song(
+        videoId = videoId,
+        title = nowPlaying.songTitle ?: "Unknown",
+        artists = listOf(com.vibeon.music.domain.model.Artist(name = nowPlaying.artistName ?: "")),
+        thumbnailUrl = nowPlaying.artworkUrl,
+    )
+    runCatching { playbackManager.playSong(song) }
 }

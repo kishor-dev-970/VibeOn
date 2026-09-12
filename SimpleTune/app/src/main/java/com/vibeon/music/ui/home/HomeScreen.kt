@@ -20,6 +20,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.MusicNote
+import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -60,6 +61,7 @@ import com.vibeon.music.ui.theme.VibeOnTextMuted
 fun HomeScreen(
     playbackManager: PlaybackManager,
     onNavigateToBrowse: (ItemType, String) -> Unit,
+    onOpenSearch: () -> Unit,
     onOpenNowPlaying: () -> Unit,
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
@@ -105,6 +107,28 @@ fun HomeScreen(
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.ExtraBold,
                     )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 20.dp)
+                            .padding(top = 12.dp)
+                            .background(VibeOnBgCardLight, RoundedCornerShape(24.dp))
+                            .clickable(onClick = onOpenSearch)
+                            .padding(horizontal = 14.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.Search,
+                            contentDescription = null,
+                            tint = VibeOnTextMuted,
+                        )
+                        Spacer(Modifier.width(10.dp))
+                        Text(
+                            text = "Search songs, artists",
+                            color = VibeOnTextMuted,
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                    }
                     Spacer(Modifier.height(12.dp))
                 }
 

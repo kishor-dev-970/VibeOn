@@ -17,7 +17,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.LibraryMusic
 import androidx.compose.material.icons.rounded.People
-import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -76,9 +75,8 @@ fun VibeOnTabBar(
 @Composable
 private fun RowScope.TabItem(tab: BottomTab, selected: Boolean, onClick: () -> Unit) {
     val icon = when (tab) {
-        BottomTab.Home -> Icons.Rounded.Home
-        BottomTab.Search -> Icons.Rounded.Search
         BottomTab.Library -> Icons.Rounded.LibraryMusic
+        BottomTab.Home -> Icons.Rounded.Home
         BottomTab.Friends -> Icons.Rounded.People
     }
     Column(

@@ -123,7 +123,7 @@ class PlaybackManager @Inject constructor(
         if (songs.isEmpty()) return
         _queue.value = songs
         _queueIndex.value = startIndex.coerceIn(0, songs.lastIndex)
-        scope.launch { startAt(_queueIndex.value) }
+        scope.launch { runCatching { startAt(_queueIndex.value) } }
     }
 
     fun addToQueue(song: Song) {
@@ -134,7 +134,7 @@ class PlaybackManager @Inject constructor(
         val next = _queueIndex.value + 1
         if (next in _queue.value.indices) {
             _queueIndex.value = next
-            scope.launch { startAt(next) }
+            scope.launch { runCatching { startAt(next) } }
         }
     }
 
@@ -142,7 +142,7 @@ class PlaybackManager @Inject constructor(
         val prev = _queueIndex.value - 1
         if (prev in _queue.value.indices) {
             _queueIndex.value = prev
-            scope.launch { startAt(prev) }
+            scope.launch { runCatching { startAt(prev) } }
         }
     }
 
@@ -199,22 +199,26 @@ class PlaybackManager @Inject constructor(
         val song = _queue.value.getOrNull(index) ?: return
         _currentSong.value = song
         _error.value = null
-        val response = musicRepository.getStreams(song) ?: run {
-            _error.value = "Could not load playback for ${song.title}"
-            return
+        try {
+            val response = musicRepository.getStreams(song) ?: run {
+                _error.value = "Could not load playback for ${song.title}"
+                return
+            }
+            if (response.playabilityStatus != "OK") {
+                _error.value = response.playabilityError ?: "Playback unavailable"
+                return
+            }
+            val quality = settingsRepository.audioQuality.first()
+            val stream = musicRepository.pickStream(response.streams, quality) ?: run {
+                _error.value = "No audio stream available"
+                return
+            }
+            player.setMediaItem(buildMediaItem(song, stream))
+            player.prepare()
+            player.play()
+        } catch (t: Exception) {
+            _error.value = "Playback error: ${t.message ?: "unexpected"}"
         }
-        if (response.playabilityStatus != "OK") {
-            _error.value = response.playabilityError ?: "Playback unavailable"
-            return
-        }
-        val quality = settingsRepository.audioQuality.first()
-        val stream = musicRepository.pickStream(response.streams, quality) ?: run {
-            _error.value = "No audio stream available"
-            return
-        }
-        player.setMediaItem(buildMediaItem(song, stream))
-        player.prepare()
-        player.play()
     }
 
     private fun buildMediaItem(song: Song, stream: StreamUrl): MediaItem {
