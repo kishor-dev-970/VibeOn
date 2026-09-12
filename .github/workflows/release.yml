@@ -10,57 +10,6 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: mobile
-    permissions:
-      contents: write
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: 17
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-          cache-dependency-path: mobile/package-lock.json
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Make gradlew executable
-        run: chmod +x android/gradlew
-
-      - name: Ensure keystore is present
-        run: cp android/app/release.keystore android/app/debug.keystore || true
-
-      - name: Build release APK
-        run: cd android && ./gradlew assembleRelease -PreactNativeArchitectures=arm64-v8a,x86_64 --no-daemon
-        env:
-          NODE_ENV: production
-          EXPO_USE_COMMUNITY_AUTOLINKING: '1'
-
-      - name: Get version
-        id: version
-        run: echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
-
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ steps.version.outputs.tag }}
-          name: ${{ steps.version.outputs.tag }}
-          body: "Release ${{ steps.version.outputs.tag }}"
-          files: mobile/android/app/build/outputs/apk/release/*.apk
-
-  simpletune:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
         working-directory: SimpleTune
     permissions:
       contents: write
@@ -85,10 +34,23 @@ jobs:
         run: echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
 
       - name: Rename APK
-        run: mv app/build/outputs/apk/debug/app-debug.apk "VibeOn-${{ steps.version.outputs.tag }}.apk"
+        run: mv app/build/outputs/apk/debug/app-debug.apk "VibeOn_${{ steps.version.outputs.tag }}.apk"
+
+      - name: Clean stale release assets
+        run: |
+          tag="${GITHUB_REF#refs/tags/}"
+          rel_api="https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/tags/${tag}"
+          rel_url=$(curl -sS -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" -H "Accept: application/vnd.github+json" "${rel_api}" | jq -r '.url // empty')
+          if [ -n "${rel_url}" ]; then
+            for id in $(curl -sS -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" "${rel_url}/assets" | jq -r --arg keep "VibeOn_${tag}.apk" '.[] | select(.name != $keep) | .id'); do
+              curl -sS -X DELETE -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" "${rel_url}/assets/${id}"
+            done
+          fi
 
       - name: Upload APK to Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.version.outputs.tag }}
-          files: VibeOn-${{ steps.version.outputs.tag }}.apk
+          name: ${{ steps.version.outputs.tag }}
+          body: "Release ${{ steps.version.outputs.tag }}"
+          files: VibeOn_${{ steps.version.outputs.tag }}.apk
