@@ -56,3 +56,39 @@ jobs:
           name: ${{ steps.version.outputs.tag }}
           body: "Release ${{ steps.version.outputs.tag }}"
           files: mobile/android/app/build/outputs/apk/release/*.apk
+
+  simpletune:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: SimpleTune
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Make gradlew executable
+        run: chmod +x gradlew
+
+      - name: Build VibeOn APK
+        run: ./gradlew :app:assembleDebug --no-daemon
+
+      - name: Get version
+        id: version
+        run: echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+      - name: Rename APK
+        run: mv app/build/outputs/apk/debug/app-debug.apk "VibeOn-${{ steps.version.outputs.tag }}.apk"
+
+      - name: Upload APK to Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          files: VibeOn-${{ steps.version.outputs.tag }}.apk
