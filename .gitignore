@@ -13,6 +13,14 @@
 # build artifacts
 *.apk
 
+# SimpleTune (VibeOn) Android project
+/SimpleTune/.gradle/
+/SimpleTune/build/
+/SimpleTune/local.properties
+/SimpleTune/app/build/
+/SimpleTune/captures/
+/SimpleTune/.kotlin/
+
 # local logs / screenshots
 *.log
 *.log.err

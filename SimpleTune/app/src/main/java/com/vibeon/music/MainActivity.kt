@@ -1,5 +1,6 @@
 package com.vibeon.music
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -18,11 +19,17 @@ import com.vibeon.music.player.PlaybackManager
 import com.vibeon.music.ui.navigation.AppNavHost
 import com.vibeon.music.ui.theme.VibeOnTheme
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity(), ImageLoaderFactory {
+
+    companion object {
+        const val EXTRA_OPEN_PLAYER = "com.vibeon.music.EXTRA_OPEN_PLAYER"
+    }
 
     @Inject
     lateinit var playbackManager: PlaybackManager
@@ -30,9 +37,12 @@ class MainActivity : ComponentActivity(), ImageLoaderFactory {
     @Inject
     lateinit var potMinter: PoTokenMinter
 
+    private val openPlayerRequests = Channel<Unit>(Channel.CONFLATED)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        handleLaunchIntent(intent)
         // Pre-mint the PO token in the background so playback doesn't stall on first tap.
         lifecycleScope.launch { potMinter.get() }
         setContent {
@@ -41,9 +51,25 @@ class MainActivity : ComponentActivity(), ImageLoaderFactory {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background,
                 ) {
-                    AppNavHost(playbackManager = playbackManager)
+                    AppNavHost(
+                        playbackManager = playbackManager,
+                        openPlayerRequests = openPlayerRequests.receiveAsFlow(),
+                    )
                 }
             }
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleLaunchIntent(intent)
+    }
+
+    private fun handleLaunchIntent(intent: Intent?) {
+        if (intent?.getBooleanExtra(EXTRA_OPEN_PLAYER, false) == true) {
+            intent.removeExtra(EXTRA_OPEN_PLAYER)
+            openPlayerRequests.trySend(Unit)
         }
     }
 

@@ -8,6 +8,7 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -36,9 +37,13 @@ import com.vibeon.music.ui.library.LibraryScreen
 import com.vibeon.music.ui.player.NowPlayingScreen
 import com.vibeon.music.ui.search.SearchScreen
 import com.vibeon.music.ui.settings.SettingsScreen
+import kotlinx.coroutines.flow.Flow
 
 @Composable
-fun AppNavHost(playbackManager: PlaybackManager) {
+fun AppNavHost(
+    playbackManager: PlaybackManager,
+    openPlayerRequests: Flow<Unit> = kotlinx.coroutines.flow.emptyFlow(),
+) {
     val authViewModel: AuthViewModel = hiltViewModel()
     val sessionReady by authViewModel.sessionReady.collectAsState()
     val currentUser by authViewModel.currentUser.collectAsState()
@@ -53,14 +58,26 @@ fun AppNavHost(playbackManager: PlaybackManager) {
             onClearError = { authViewModel.clearError() },
             onSignIn = { first, last -> authViewModel.signIn(first, last) },
         )
-        else -> MainNavHost(playbackManager = playbackManager)
+        else -> MainNavHost(
+            playbackManager = playbackManager,
+            openPlayerRequests = openPlayerRequests,
+        )
     }
 }
 
 @Composable
-private fun MainNavHost(playbackManager: PlaybackManager) {
+private fun MainNavHost(
+    playbackManager: PlaybackManager,
+    openPlayerRequests: Flow<Unit>,
+) {
     val navController = rememberNavController()
     var topRoute by remember { mutableStateOf(Screen.Home.route) }
+
+    LaunchedEffect(Unit) {
+        openPlayerRequests.collect {
+            navController.navigate(Screen.NowPlaying.route) { launchSingleTop = true }
+        }
+    }
 
     fun goBackToTop(route: String) {
         navController.navigate(route) {

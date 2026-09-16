@@ -104,11 +104,12 @@ fun SongArtwork(
     url: String?,
     modifier: Modifier = Modifier,
     cornerShape: RoundedCornerShape = RoundedCornerShape(10.dp),
+    backgroundColor: Color = VibeOnBgCardLight,
 ) {
     Box(
         modifier = modifier
             .clip(cornerShape)
-            .background(VibeOnBgCardLight)
+            .background(backgroundColor)
     ) {
         if (!url.isNullOrBlank()) {
             AsyncImage(

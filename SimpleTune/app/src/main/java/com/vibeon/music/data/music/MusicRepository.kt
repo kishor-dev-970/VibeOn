@@ -96,7 +96,7 @@ class MusicRepository @Inject constructor(
         client.continuation(continuation)?.let { InnerTubeParser.parseTrackContinuation(it) }
             ?: (emptyList<Song>() to null)
 
-    suspend fun getStreams(song: Song): PlayerResponse? {
+    suspend fun getStreams(song: Song, attempt: Int = 0): PlayerResponse? {
         streamCache[song.videoId]?.let { return it }
         var minted = potMinter.get()
         var body = client.player(song.videoId, minted)
@@ -123,6 +123,12 @@ class MusicRepository @Inject constructor(
         )
         if (data.playabilityStatus == "OK") {
             streamCache[song.videoId] = response
+        } else if (data.playabilityStatus != "OK" && minted != null && attempt == 0) {
+            // A stale/consumed token shows up as an unplayable response rather than a
+            // missing body; re-mint once so the next queued track still loads.
+            potMinter.invalidate()
+            streamCache.remove(song.videoId)
+            return getStreams(song, attempt = 1)
         }
         return response
     }

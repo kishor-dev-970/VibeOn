@@ -1,7 +1,9 @@
 package com.vibeon.music.player
 
+import android.content.ComponentName
 import android.content.Context
 import android.net.Uri
+import androidx.core.content.ContextCompat
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.PlaybackException
@@ -10,6 +12,8 @@ import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
+import androidx.media3.session.MediaController
+import androidx.media3.session.SessionToken
 import com.vibeon.music.data.local.LibraryRepository
 import com.vibeon.music.data.music.MusicRepository
 import com.vibeon.music.data.settings.AudioQuality
@@ -41,6 +45,8 @@ class PlaybackManager @Inject constructor(
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
+    private var mediaController: MediaController? = null
+
     private val _currentSong = MutableStateFlow<Song?>(null)
     val currentSong: StateFlow<Song?> = _currentSong.asStateFlow()
 
@@ -66,6 +72,11 @@ class PlaybackManager @Inject constructor(
     val sleepTimerRemainingSec: StateFlow<Long?> = _sleepTimerRemainingSec.asStateFlow()
 
     private var sleepTimerJob: kotlinx.coroutines.Job? = null
+
+    // Increments on every user-initiated play/next/previous so stale load
+    // coroutines (which can race a completed song and drop the next track)
+    // abort instead of fighting the latest request.
+    private var playGeneration = 0
 
     val player: ExoPlayer by lazy {
         val dataSourceFactory = DefaultHttpDataSource.Factory()
@@ -122,8 +133,7 @@ class PlaybackManager @Inject constructor(
     fun playQueue(songs: List<Song>, startIndex: Int) {
         if (songs.isEmpty()) return
         _queue.value = songs
-        _queueIndex.value = startIndex.coerceIn(0, songs.lastIndex)
-        scope.launch { runCatching { startAt(_queueIndex.value) } }
+        playAt(startIndex.coerceIn(0, songs.lastIndex))
     }
 
     fun addToQueue(song: Song) {
@@ -132,23 +142,26 @@ class PlaybackManager @Inject constructor(
 
     fun playNext() {
         val next = _queueIndex.value + 1
-        if (next in _queue.value.indices) {
-            _queueIndex.value = next
-            scope.launch { runCatching { startAt(next) } }
-        }
+        if (next in _queue.value.indices) playAt(next)
     }
 
     fun playPrevious() {
         val prev = _queueIndex.value - 1
-        if (prev in _queue.value.indices) {
-            _queueIndex.value = prev
-            scope.launch { runCatching { startAt(prev) } }
-        }
+        if (prev in _queue.value.indices) playAt(prev)
+    }
+
+    private fun playAt(index: Int) {
+        val generation = ++playGeneration
+        _queueIndex.value = index
+        scope.launch { runCatching { startAt(index, generation) } }
     }
 
     fun togglePlayPause() {
         if (player.mediaItemCount == 0) return
-        if (player.isPlaying) player.pause() else player.play()
+        if (player.isPlaying) player.pause() else {
+            ensureMediaSession()
+            player.play()
+        }
     }
 
     fun seekTo(positionMs: Long) {
@@ -163,6 +176,32 @@ class PlaybackManager @Inject constructor(
         _error.value = null
         _queueIndex.value = -1
         scope.launch { friendsRepository.clearNowPlaying() }
+        releaseMediaSession()
+    }
+
+    /**
+     * Connects a MediaController to the PlaybackService session. In media3 1.5.x a session created
+     * inside a MediaSessionService only gets attached (and its media notification posted) once a
+     * controller connects to it, so we keep one connected for the whole playback session. The
+     * connection also starts the service, which then promotes itself to the foreground while playing.
+     */
+    private fun ensureMediaSession() {
+        if (mediaController != null) return
+        val token = SessionToken(context, ComponentName(context, PlaybackService::class.java))
+        val builder = MediaController.Builder(context, token)
+        val connectionFuture = builder.buildAsync()
+        connectionFuture.addListener(
+            {
+                runCatching { mediaController = connectionFuture.get() }
+            },
+            ContextCompat.getMainExecutor(context),
+        )
+    }
+
+    private fun releaseMediaSession() {
+        val controller = mediaController ?: return
+        mediaController = null
+        controller.release()
     }
 
     fun resetError() {
@@ -195,29 +234,35 @@ class PlaybackManager @Inject constructor(
         }
     }
 
-    private suspend fun startAt(index: Int) {
+    private suspend fun startAt(index: Int, generation: Int) {
         val song = _queue.value.getOrNull(index) ?: return
         _currentSong.value = song
         _error.value = null
+        val response = runCatching { musicRepository.getStreams(song) }.getOrNull()
+        if (generation != playGeneration || _queueIndex.value != index) return
+        val stream = if (response != null && response.playabilityStatus == "OK") {
+            runCatching {
+                musicRepository.pickStream(response.streams, settingsRepository.audioQuality.first())
+            }.getOrNull()
+        } else {
+            response?.playabilityError?.takeIf { it.isNotBlank() }?.let { _error.value = it }
+            null
+        }
+        if (stream == null) {
+            if (_error.value == null) _error.value = "Could not load playback for ${song.title}"
+            // Skip unplayable tracks instead of stalling the queue at the end of a song.
+            if (index + 1 in _queue.value.indices) playAt(index + 1)
+            return
+        }
         try {
-            val response = musicRepository.getStreams(song) ?: run {
-                _error.value = "Could not load playback for ${song.title}"
-                return
-            }
-            if (response.playabilityStatus != "OK") {
-                _error.value = response.playabilityError ?: "Playback unavailable"
-                return
-            }
-            val quality = settingsRepository.audioQuality.first()
-            val stream = musicRepository.pickStream(response.streams, quality) ?: run {
-                _error.value = "No audio stream available"
-                return
-            }
+            player.stop()
+            player.clearMediaItems()
             player.setMediaItem(buildMediaItem(song, stream))
             player.prepare()
+            ensureMediaSession()
             player.play()
         } catch (t: Exception) {
-            _error.value = "Playback error: ${t.message ?: "unexpected"}"
+            _error.value = t.message?.let { "Playback error: $it" } ?: "Playback error"
         }
     }
 

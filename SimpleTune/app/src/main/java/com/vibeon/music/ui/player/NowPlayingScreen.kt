@@ -100,18 +100,18 @@ fun NowPlayingScreen(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 20.dp)
-                    .height(300.dp),
+                    .padding(vertical = 6.dp),
                 contentAlignment = Alignment.Center,
             ) {
                 SongArtwork(
                     url = song?.thumbnailUrl,
-                    modifier = Modifier.size(290.dp),
-                    cornerShape = RoundedCornerShape(24.dp),
+                    modifier = Modifier.size(160.dp),
+                    cornerShape = RoundedCornerShape(20.dp),
+                    backgroundColor = Color.Transparent,
                 )
                 if (isBuffering) {
                     androidx.compose.material3.CircularProgressIndicator(
-                        modifier = Modifier.size(64.dp),
+                        modifier = Modifier.size(56.dp),
                         color = VibeOnPrimary,
                     )
                 }
@@ -133,7 +133,7 @@ fun NowPlayingScreen(
                 overflow = TextOverflow.Ellipsis,
             )
 
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(8.dp))
 
             Slider(
                 value = position.toFloat().coerceAtMost(durationMs.toFloat().coerceAtLeast(1f)),
@@ -153,12 +153,10 @@ fun NowPlayingScreen(
                 Text(formatTime(durationMs), color = VibeOnTextMuted, style = MaterialTheme.typography.labelSmall)
             }
 
-            Spacer(Modifier.height(6.dp))
-
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 14.dp),
+                    .padding(vertical = 4.dp),
                 horizontalArrangement = Arrangement.SpaceEvenly,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -196,10 +194,10 @@ fun NowPlayingScreen(
             }
 
             if (queue.isNotEmpty()) {
-                Spacer(Modifier.height(8.dp))
+                Spacer(Modifier.height(4.dp))
                 Text(
                     text = "Up Next",
-                    modifier = Modifier.padding(vertical = 8.dp),
+                    modifier = Modifier.padding(vertical = 6.dp),
                     color = VibeOnTextMuted,
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.Bold,
