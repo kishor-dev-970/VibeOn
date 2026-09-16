@@ -18,8 +18,8 @@ android {
         applicationId = "com.vibeon.music"
         minSdk = 29
         targetSdk = 36
-        versionCode = 3
-        versionName = "2.0.1"
+        versionCode = 4
+        versionName = "2.0.2"
         vectorDrawables { useSupportLibrary = true }
 
         buildConfigField("String", "SOCIAL_API_URL", "\"$socialApiUrl\"")
