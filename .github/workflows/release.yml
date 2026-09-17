@@ -27,17 +27,18 @@ jobs:
         run: chmod +x gradlew
 
       - name: Restore signing keystore
-        if: ${{ secrets.KEYSTORE_BASE64 != '' }}
         run: |
-          mkdir -p keystore
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > keystore/vibeon.jks
-          cat > keystore/key.properties <<'EOF'
-          storeFile=vibeon.jks
-          storePassword=${{ secrets.KEYSTORE_PASSWORD }}
-          keyAlias=vibeon
-          keyPassword=${{ secrets.KEYSTORE_PASSWORD }}
-          EOF
-          
+          if [ -n "${KEYSTORE_BASE64:-}" ]; then
+            mkdir -p keystore
+            echo "$KEYSTORE_BASE64" | base64 -d > keystore/vibeon.jks
+            printf 'storeFile=vibeon.jks\nstorePassword=%s\nkeyAlias=vibeon\nkeyPassword=%s\n' "$KEYSTORE_PASSWORD" "$KEYSTORE_PASSWORD" > keystore/key.properties
+          else
+            echo "No keystore secrets set; falling back to default debug signing"
+          fi
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+
       - name: Build VibeOn APK
         run: ./gradlew :app:assembleDebug --no-daemon
 
