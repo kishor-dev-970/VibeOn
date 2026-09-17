@@ -20,6 +20,8 @@
 /SimpleTune/app/build/
 /SimpleTune/captures/
 /SimpleTune/.kotlin/
+# Signing keystore + credentials (same keystore shared with CI via GitHub secrets)
+/SimpleTune/keystore/
 
 # local logs / screenshots
 *.log

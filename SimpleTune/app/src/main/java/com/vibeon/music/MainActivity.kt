@@ -15,7 +15,9 @@ import coil.ImageLoaderFactory
 import coil.disk.DiskCache
 import coil.memory.MemoryCache
 import com.vibeon.music.data.innertube.PoTokenMinter
+import com.vibeon.music.data.network.SocialApiClient
 import com.vibeon.music.player.PlaybackManager
+import com.vibeon.music.ui.components.UpdatePromptHost
 import com.vibeon.music.ui.navigation.AppNavHost
 import com.vibeon.music.ui.theme.VibeOnTheme
 import dagger.hilt.android.AndroidEntryPoint
@@ -37,6 +39,9 @@ class MainActivity : ComponentActivity(), ImageLoaderFactory {
     @Inject
     lateinit var potMinter: PoTokenMinter
 
+    @Inject
+    lateinit var socialApiClient: SocialApiClient
+
     private val openPlayerRequests = Channel<Unit>(Channel.CONFLATED)
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -55,6 +60,7 @@ class MainActivity : ComponentActivity(), ImageLoaderFactory {
                         playbackManager = playbackManager,
                         openPlayerRequests = openPlayerRequests.receiveAsFlow(),
                     )
+                    UpdatePromptHost(api = socialApiClient)
                 }
             }
         }

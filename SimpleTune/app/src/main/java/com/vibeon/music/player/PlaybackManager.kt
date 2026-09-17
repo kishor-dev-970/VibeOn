@@ -78,6 +78,9 @@ class PlaybackManager @Inject constructor(
     // abort instead of fighting the latest request.
     private var playGeneration = 0
 
+    // Maximum tracks to probe when resolving the "next" window (skips unplayable ones).
+    private val preloadAttempts = 3
+
     val player: ExoPlayer by lazy {
         val dataSourceFactory = DefaultHttpDataSource.Factory()
             .setUserAgent("VibeOn/${com.vibeon.music.BuildConfig.VERSION_NAME} (Android)")
@@ -117,12 +120,16 @@ class PlaybackManager @Inject constructor(
                     _currentSong.value = _queue.value[index]
                     _queueIndex.value = index
                     recordAndResume(_queue.value[index])
+                    armNextTrack()
                 }
             }
         }
 
         override fun onPlayerError(error: PlaybackException) {
             _error.value = error.message?.let { "Playback error: $it" } ?: "Playback error"
+            // Transient per-track failures (network drop, expired URL, codec hiccup) must not
+            // silently halt the queue: skip on to the next track.
+            playNext()
         }
     }
 
@@ -261,9 +268,62 @@ class PlaybackManager @Inject constructor(
             player.prepare()
             ensureMediaSession()
             player.play()
+            // Keep a second resolved track on the timeline so the media session exposes a
+            // multi-item queue: modern SystemUI derives the Next control from the timeline
+            // (not notification actions) and hides it for a single-item queue, and ExoPlayer
+            // then auto-advances without a gap.
+            armNextTrack()
         } catch (t: Exception) {
             _error.value = t.message?.let { "Playback error: $it" } ?: "Playback error"
         }
+    }
+
+    /**
+     * Keeps the player timeline at two resolved windows (current + next). Called after starting
+     * a track and after every transition into a loaded window. Trims played windows that are
+     * before the current one and appends the following track once it is resolved, so the queue
+     * stays tight and the Next control never disappears between songs.
+     */
+    private fun armNextTrack() {
+        if (player.mediaItemCount == 0) return
+        if (player.currentMediaItemIndex < player.mediaItemCount - 1) return
+        val from = _queueIndex.value + 1
+        if (from !in _queue.value.indices) return
+        val generation = playGeneration
+        if (player.currentMediaItemIndex > 0) {
+            player.removeMediaItems(0, player.currentMediaItemIndex)
+        }
+        scope.launch {
+            val next = resolveNextPlayable(from, generation) ?: return@launch
+            if (generation != playGeneration) return@launch
+            player.addMediaItem(next.second)
+        }
+    }
+
+    /**
+     * Resolves the next playable track starting at [fromIndex], skipping unplayable ones (same
+     * skip logic as [startAt], bounded by [preloadAttempts]). Returns the queue index and its
+     * built MediaItem, or null when nothing further in the queue can play.
+     */
+    private suspend fun resolveNextPlayable(fromIndex: Int, generation: Int): Pair<Int, MediaItem>? {
+        val queue = _queue.value
+        var i = fromIndex
+        var attempts = 0
+        while (i in queue.indices && attempts < preloadAttempts) {
+            if (generation != playGeneration) return null
+            val song = queue[i]
+            val response = runCatching { musicRepository.getStreams(song) }.getOrNull()
+            if (generation != playGeneration) return null
+            val stream = if (response != null && response.playabilityStatus == "OK") {
+                runCatching { musicRepository.pickStream(response.streams, settingsRepository.audioQuality.first()) }.getOrNull()
+            } else {
+                null
+            }
+            if (stream != null) return i to buildMediaItem(song, stream)
+            attempts++
+            i++
+        }
+        return null
     }
 
     private fun buildMediaItem(song: Song, stream: StreamUrl): MediaItem {

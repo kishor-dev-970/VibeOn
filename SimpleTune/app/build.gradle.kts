@@ -1,4 +1,6 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import java.io.FileInputStream
+import java.util.Properties
 
 plugins {
     alias(libs.plugins.android.application)
@@ -10,25 +12,54 @@ plugins {
 
 val socialApiUrl = providers.gradleProperty("SOCIAL_API_URL").orNull ?: "https://social-music-server.onrender.com"
 
+// Single shared signing key so every build (debug or release, local or CI) has the SAME
+// signature, letting new APKs install over older ones. Credentials live in
+// SimpleTune/keystore/key.properties locally (gitignored) and are recreated in CI from
+// GitHub secrets. Without them the build falls back to the default debug signing.
+val signingPropsFile = rootProject.file("keystore/key.properties")
+val signingProps = Properties().apply {
+    if (signingPropsFile.exists()) FileInputStream(signingPropsFile).use { load(it) }
+}
+val hasVibeonKey = signingProps.containsKey("storeFile")
+
 android {
     namespace = "com.vibeon.music"
     compileSdk = 36
+
+    signingConfigs {
+        create("vibeon") {
+            if (hasVibeonKey) {
+                storeFile = rootProject.file("keystore/${signingProps.getProperty("storeFile")}")
+                storePassword = signingProps.getProperty("storePassword")
+                keyAlias = signingProps.getProperty("keyAlias")
+                keyPassword = signingProps.getProperty("keyPassword")
+            }
+        }
+    }
 
     defaultConfig {
         applicationId = "com.vibeon.music"
         minSdk = 29
         targetSdk = 36
-        versionCode = 4
-        versionName = "2.0.2"
+        versionCode = 5
+        versionName = providers.gradleProperty("VIBEON_VERSION_NAME").getOrElse("2.0.3")
         vectorDrawables { useSupportLibrary = true }
 
         buildConfigField("String", "SOCIAL_API_URL", "\"$socialApiUrl\"")
     }
 
     buildTypes {
+        debug {
+            if (hasVibeonKey) signingConfig = signingConfigs.getByName("vibeon")
+        }
         release {
             isMinifyEnabled = true
             isShrinkResources = true
+            if (hasVibeonKey) {
+                signingConfig = signingConfigs.getByName("vibeon")
+            } else {
+                signingConfig = signingConfigs.getByName("debug")
+            }
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

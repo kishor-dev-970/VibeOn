@@ -53,10 +53,10 @@ import com.vibeon.music.ui.theme.VibeOnSuccess
 import com.vibeon.music.ui.theme.VibeOnText
 import com.vibeon.music.ui.theme.VibeOnTextMuted
 import com.vibeon.music.ui.theme.VibeOnTextSubtle
+import com.vibeon.music.util.GITHUB_RELEASES_URL
+import com.vibeon.music.util.isNewerVersion
 import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.launch
-
-private const val GITHUB_LINK = "https://github.com/kishor-dev-970/VibeOn/releases/latest"
 
 @Composable
 fun SettingsScreen(
@@ -143,7 +143,7 @@ fun SettingsScreen(
                         icon = "📣",
                         label = "Invite Friends",
                         onClick = {
-                            val message = "Join me on VibeOn! My user code is ${user?.code ?: ""}. Listen to music together. Download the app: $GITHUB_LINK"
+                            val message = "Join me on VibeOn! My user code is ${user?.code ?: ""}. Listen to music together. Download the app: $GITHUB_RELEASES_URL"
                             val intent = Intent(Intent.ACTION_SEND).apply {
                                 type = "text/plain"
                                 putExtra(Intent.EXTRA_TEXT, message)
@@ -156,7 +156,7 @@ fun SettingsScreen(
                         icon = "💬",
                         label = "Share on WhatsApp",
                         onClick = {
-                            val msg = Uri.encode("Join me on VibeOn! My user code is ${user?.code ?: ""}. Listen to music together. Download the app: $GITHUB_LINK")
+                            val msg = Uri.encode("Join me on VibeOn! My user code is ${user?.code ?: ""}. Listen to music together. Download the app: $GITHUB_RELEASES_URL")
                             val intent = Intent(Intent.ACTION_VIEW, Uri.parse("whatsapp://send?text=$msg"))
                             runCatching { context.startActivity(intent) }
                         },
@@ -332,7 +332,7 @@ fun SettingsScreen(
                     latest != null && isNewerVersion(latest, "v${BuildConfig.VERSION_NAME}") -> {
                         TextButton(onClick = {
                             updateDialog = null
-                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(GITHUB_LINK))
+                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(GITHUB_RELEASES_URL))
                             runCatching { context.startActivity(intent) }
                         }) {
                             Text("Download", color = VibeOnPrimary, fontWeight = FontWeight.Bold)
@@ -431,17 +431,4 @@ private fun AudioQuality.label(): String = when (this) {
     AudioQuality.LOW -> "Low"
     AudioQuality.NORMAL -> "Normal"
     AudioQuality.HIGH -> "High"
-}
-
-private fun isNewerVersion(latest: String, current: String): Boolean {
-    fun parse(v: String): List<Int> =
-        v.trim().removePrefix("v").split(".").mapNotNull { it.toIntOrNull() }
-    val l = parse(latest)
-    val c = parse(current)
-    for (i in 0 until maxOf(l.size, c.size)) {
-        val a = l.getOrElse(i) { 0 }
-        val b = c.getOrElse(i) { 0 }
-        if (a != b) return a > b
-    }
-    return false
 }
