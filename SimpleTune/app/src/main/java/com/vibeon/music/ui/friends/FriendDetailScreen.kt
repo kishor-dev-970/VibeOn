@@ -151,20 +151,82 @@ private fun FriendStatsContent(
             )
         }
 
+        if (stats.topSongs.isNotEmpty()) {
+            item {
+                Text(
+                    text = "TOP SONGS THIS WEEK",
+                    color = VibeOnTextMuted,
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold,
+                )
+            }
+            items(
+                items = stats.topSongs,
+                key = { stat -> "top-${stat.videoId ?: stat.songTitle}" },
+            ) { stat ->
+                val playable = !stat.videoId.isNullOrBlank()
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(enabled = playable) {
+                            playFriendSong(
+                                NowPlaying(
+                                    isPlaying = true,
+                                    songTitle = stat.songTitle,
+                                    artistName = stat.artistName,
+                                    artworkUrl = stat.artworkUrl,
+                                    videoId = stat.videoId,
+                                ),
+                                playbackManager,
+                            )
+                        }
+                        .padding(vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    SongArtwork(url = stat.artworkUrl, modifier = Modifier.size(48.dp))
+                    Spacer(Modifier.width(12.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text(
+                            stat.songTitle,
+                            color = VibeOnText,
+                            fontWeight = FontWeight.SemiBold,
+                            maxLines = 1,
+                        )
+                        if (!stat.artistName.isNullOrBlank()) {
+                            Text(
+                                stat.artistName ?: "",
+                                color = VibeOnTextMuted,
+                                style = MaterialTheme.typography.bodySmall,
+                                maxLines = 1,
+                            )
+                        }
+                    }
+                    Text(
+                        text = "${stat.count}",
+                        color = VibeOnAccent,
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
+            }
+        }
+
         if (stats.recentPlays.isEmpty()) {
             item { EmptyState("No plays recorded yet") }
         } else {
             items(stats.recentPlays, key = { "${it.playedAt}-${it.songTitle}" }) { play ->
+                val playable = !play.videoId.isNullOrBlank()
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable {
+                        .clickable(enabled = playable) {
                             playFriendSong(
                                 NowPlaying(
                                     isPlaying = true,
                                     songTitle = play.songTitle,
                                     artistName = play.artistName,
                                     artworkUrl = play.artworkUrl,
+                                    videoId = play.videoId,
                                 ),
                                 playbackManager,
                             )

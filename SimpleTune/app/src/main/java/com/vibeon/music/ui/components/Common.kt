@@ -24,6 +24,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -77,14 +78,28 @@ fun LoadingIndicator(modifier: Modifier = Modifier, size: Int = 32) {
 }
 
 @Composable
-fun EmptyState(text: String, modifier: Modifier = Modifier) {
-    Box(modifier = modifier.fillMaxWidth().padding(vertical = 48.dp), contentAlignment = Alignment.Center) {
+fun EmptyState(text: String, modifier: Modifier = Modifier, onRetry: (() -> Unit)? = null) {
+    Column(
+        modifier = modifier.fillMaxWidth().padding(vertical = 48.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
         Text(
             text = text,
             color = VibeOnTextMuted,
             style = MaterialTheme.typography.bodyMedium,
             textAlign = TextAlign.Center,
         )
+        if (onRetry != null) {
+            Spacer(Modifier.height(14.dp))
+            TextButton(onClick = onRetry) {
+                Text(
+                    text = "Retry",
+                    color = VibeOnPrimary,
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold,
+                )
+            }
+        }
     }
 }
 

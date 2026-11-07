@@ -84,6 +84,7 @@ private fun ServerStats.toDomain(): FriendStats = FriendStats(
     nowPlaying = nowPlaying?.toDomain(),
     topSongs = songsListened.map {
         SongStat(
+            videoId = it.videoId,
             songTitle = it.title ?: "",
             artistName = it.channel,
             artworkUrl = it.thumbnailUrl,
@@ -92,6 +93,7 @@ private fun ServerStats.toDomain(): FriendStats = FriendStats(
     },
     recentPlays = recentPlays.map {
         RecentPlay(
+            videoId = it.videoId,
             songTitle = it.title ?: "",
             artistName = it.channel,
             artworkUrl = it.thumbnailUrl,

@@ -2,6 +2,8 @@ package com.vibeon.music.ui.friends
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.vibeon.music.data.auth.AuthRepository
+import com.vibeon.music.data.network.AuthExpiredException
 import com.vibeon.music.data.social.FriendsRepository
 import com.vibeon.music.domain.model.FriendActivity
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -16,6 +18,7 @@ import javax.inject.Inject
 @HiltViewModel
 class FriendsViewModel @Inject constructor(
     private val friendsRepository: FriendsRepository,
+    private val authRepository: AuthRepository,
 ) : ViewModel() {
 
     private val _friends = MutableStateFlow<List<FriendActivity>>(emptyList())
@@ -26,6 +29,9 @@ class FriendsViewModel @Inject constructor(
 
     private val _refreshing = MutableStateFlow(false)
     val refreshing: StateFlow<Boolean> = _refreshing.asStateFlow()
+
+    private val _error = MutableStateFlow<String?>(null)
+    val error: StateFlow<String?> = _error.asStateFlow()
 
     init {
         viewModelScope.launch {
@@ -58,9 +64,18 @@ class FriendsViewModel @Inject constructor(
     }
 
     private suspend fun poll() {
-        val listed = friendsRepository.fetchFriendsActivity()
-        _friends.value = listed
-        _loading.value = false
+        try {
+            val listed = friendsRepository.fetchFriendsActivity()
+            _friends.value = listed
+            _error.value = null
+        } catch (_: AuthExpiredException) {
+            // Token expired or revoked: drop the session so the app returns to sign-in.
+            authRepository.signOut()
+        } catch (e: Exception) {
+            _error.value = e.message ?: "Could not load friends"
+        } finally {
+            _loading.value = false
+        }
     }
 
     companion object {

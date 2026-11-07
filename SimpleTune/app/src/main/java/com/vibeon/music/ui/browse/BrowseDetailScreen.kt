@@ -65,6 +65,10 @@ fun BrowseDetailScreen(
             }
             when {
                 state.loading -> LoadingIndicator()
+                state.error != null -> EmptyState(
+                    text = state.error ?: "Couldn't load this page",
+                    onRetry = { viewModel.retry() },
+                )
                 state.songs.isEmpty() -> EmptyState("No tracks here yet")
                 else -> LazyColumn(
                     modifier = Modifier.fillMaxSize(),

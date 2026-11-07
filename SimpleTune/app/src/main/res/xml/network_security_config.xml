@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- Release traffic is HTTPS only: InnerTube, PO-token minting, GitHub releases and the
+         social API are all reached over TLS. Cleartext is permitted only for loopback/emulator
+         hosts so `SOCIAL_API_URL` can point at a local `next dev` server; note that this file
+         matches hostnames, not CIDR ranges, so a LAN IP (192.168.x.x) still requires the
+         debug-only manifest overlay in src/debug. -->
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">localhost</domain>
+        <domain includeSubdomains="false">127.0.0.1</domain>
+        <!-- Host loopback as seen from inside the Android emulator. -->
+        <domain includeSubdomains="false">10.0.2.2</domain>
+    </domain-config>
+</network-security-config>

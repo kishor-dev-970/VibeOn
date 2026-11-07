@@ -37,24 +37,43 @@ class BrowseDetailViewModel @Inject constructor(
         val artist: Artist? = null,
         val songs: List<Song> = emptyList(),
         val continuation: String? = null,
+        val error: String? = null,
     )
 
     private val _state = MutableStateFlow(UiState())
     val state: StateFlow<UiState> = _state.asStateFlow()
 
     init {
+        load()
+    }
+
+    fun retry() {
+        load()
+    }
+
+    /**
+     * Always resolves to a terminal state. InnerTube browse calls return null on any failure,
+     * which previously left `loading` stuck at true and the screen spinning forever.
+     */
+    private fun load() {
+        _state.value = UiState(loading = true)
         viewModelScope.launch {
-            when (type) {
-                ItemType.ALBUM -> musicRepository.fetchAlbum(browseId)?.let { r ->
-                    _state.value = UiState(loading = false, album = r.album, songs = r.songs, continuation = r.continuation)
+            val result = runCatching {
+                when (type) {
+                    ItemType.ALBUM -> musicRepository.fetchAlbum(browseId)?.let { r ->
+                        UiState(loading = false, album = r.album, songs = r.songs, continuation = r.continuation)
+                    }
+
+                    ItemType.PLAYLIST -> musicRepository.fetchPlaylist(browseId)?.let { r ->
+                        UiState(loading = false, playlist = r.playlist, songs = r.songs, continuation = r.continuation)
+                    }
+
+                    else -> musicRepository.fetchArtist(browseId)?.let { r ->
+                        UiState(loading = false, artist = r.artist, songs = r.songs)
+                    }
                 }
-                ItemType.PLAYLIST -> musicRepository.fetchPlaylist(browseId)?.let { r ->
-                    _state.value = UiState(loading = false, playlist = r.playlist, songs = r.songs, continuation = r.continuation)
-                }
-                else -> musicRepository.fetchArtist(browseId)?.let { r ->
-                    _state.value = UiState(loading = false, artist = r.artist, songs = r.songs)
-                }
-            }
+            }.getOrNull()
+            _state.value = result ?: UiState(loading = false, error = "Couldn't load this page")
         }
     }
 

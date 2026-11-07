@@ -33,6 +33,7 @@ data class FriendActivity(
 @Serializable
 data class SongStat(
     val songTitle: String,
+    val videoId: String? = null,
     val artistName: String? = null,
     val artworkUrl: String? = null,
     val count: Long,
@@ -41,6 +42,7 @@ data class SongStat(
 @Serializable
 data class RecentPlay(
     val songTitle: String,
+    val videoId: String? = null,
     val artistName: String? = null,
     val artworkUrl: String? = null,
     val playedAt: Long,

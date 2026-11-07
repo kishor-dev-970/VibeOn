@@ -64,6 +64,7 @@ fun FriendsScreen(
     val friends by viewModel.friends.collectAsState()
     val loading by viewModel.loading.collectAsState()
     val refreshing by viewModel.refreshing.collectAsState()
+    val error by viewModel.error.collectAsState()
 
     LaunchedEffect(Unit) {
         viewModel.startPolling()
@@ -108,6 +109,7 @@ fun FriendsScreen(
             val listeningCount = friends.count { it.nowPlaying?.isPlaying == true }
             Text(
                 text = when {
+                    friends.isEmpty() && error != null -> "Couldn't load friends"
                     friends.isEmpty() -> "See what your friends are listening to"
                     listeningCount == 1 -> "1 person is listening now"
                     listeningCount > 1 -> "$listeningCount people are listening now"
@@ -121,6 +123,10 @@ fun FriendsScreen(
 
             when {
                 loading && friends.isEmpty() -> LoadingIndicator()
+                error != null && friends.isEmpty() -> EmptyState(
+                    text = error ?: "Could not load friends",
+                    onRetry = { viewModel.refresh() },
+                )
                 friends.isEmpty() -> EmptyState("No friends yet. Everyone on VibeOn is a friend.")
                 else -> LazyColumn(
                     modifier = Modifier.fillMaxSize(),

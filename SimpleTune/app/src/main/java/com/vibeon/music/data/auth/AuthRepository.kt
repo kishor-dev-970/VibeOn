@@ -38,6 +38,22 @@ class AuthRepository @Inject constructor(
                 ?.let { runCatching { SocialApiClient.json.decodeFromString<AppUser>(it) }.getOrNull() }
             if (token == null) _currentUser.value = null
             _sessionReady.value = true
+
+            // Session tokens expire after 30 days. If the server rejects the stored token,
+            // renew it silently with the stored name (the server re-issues a token for the
+            // same first + last name). Only sign out if renewal fails, so the user does not
+            // silently get empty friends lists and failed now-playing updates.
+            if (token != null && _currentUser.value != null && api.validateSession() == false) {
+                val user = _currentUser.value
+                val renewed = user != null &&
+                    user.firstName.isNotBlank() &&
+                    user.lastName.isNotBlank() &&
+                    signInWithName(user.firstName, user.lastName).isSuccess
+                if (!renewed) {
+                    settings.clearAuth()
+                    _currentUser.value = null
+                }
+            }
         }
     }
 

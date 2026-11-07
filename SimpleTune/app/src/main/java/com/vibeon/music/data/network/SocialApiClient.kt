@@ -78,6 +78,7 @@ data class FriendsResponse(
 
 @Serializable
 data class ServerSongStat(
+    val videoId: String? = null,
     val title: String? = null,
     val channel: String? = null,
     val thumbnailUrl: String? = null,
@@ -86,6 +87,7 @@ data class ServerSongStat(
 
 @Serializable
 data class ServerRecentPlay(
+    val videoId: String? = null,
     val title: String? = null,
     val channel: String? = null,
     val thumbnailUrl: String? = null,
@@ -116,6 +118,9 @@ private data class NowPlayingPut(
     val isPlaying: Boolean,
 )
 
+/** Thrown when the stored session token is missing or rejected by the server. */
+class AuthExpiredException : Exception("Session expired")
+
 @Singleton
 class SocialApiClient @Inject constructor(
     private val settings: SettingsRepository,
@@ -145,6 +150,26 @@ class SocialApiClient @Inject constructor(
 
     private suspend fun tokenOrNull(): String? = settings.authToken.first()
 
+    /**
+     * Validates the stored session against the server.
+     * Returns true when valid, false when the server rejects the token (expired/invalid),
+     * and null when validity cannot be determined (e.g. offline).
+     */
+    suspend fun validateSession(): Boolean? =
+        withContext(io) {
+            val token = tokenOrNull() ?: return@withContext false
+            runCatching {
+                val response = http.get("$baseUrl/api/me") {
+                    bearerAuth(token)
+                }
+                when {
+                    response.status.isSuccess() -> true
+                    response.status == HttpStatusCode.Unauthorized -> false
+                    else -> null
+                }
+            }.getOrNull()
+        }
+
     suspend fun signInWithName(firstName: String, lastName: String): Result<AuthResponse> =
         withContext(io) {
             runCatching {
@@ -166,16 +191,15 @@ class SocialApiClient @Inject constructor(
 
     suspend fun fetchFriendsActivity(): List<ServerFriend> =
         withContext(io) {
-            val token = tokenOrNull() ?: return@withContext emptyList()
-            runCatching {
-                val response = http.get("$baseUrl/api/activity") {
-                    bearerAuth(token)
-                }
-                if (!response.status.isSuccess()) {
-                    return@runCatching emptyList()
-                }
-                json.decodeFromString<FriendsResponse>(response.bodyAsText()).friends
-            }.getOrElse { emptyList() }
+            val token = tokenOrNull() ?: throw AuthExpiredException()
+            val response = http.get("$baseUrl/api/activity") {
+                bearerAuth(token)
+            }
+            if (response.status == HttpStatusCode.Unauthorized) throw AuthExpiredException()
+            if (!response.status.isSuccess()) {
+                error("Could not load friends (${response.status.value})")
+            }
+            json.decodeFromString<FriendsResponse>(response.bodyAsText()).friends
         }
 
     suspend fun fetchFriendStats(userId: String): ServerStats? =

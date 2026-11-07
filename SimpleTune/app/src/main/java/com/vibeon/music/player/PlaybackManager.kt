@@ -32,6 +32,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.collect
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -81,6 +82,27 @@ class PlaybackManager @Inject constructor(
     // Maximum tracks to probe when resolving the "next" window (skips unplayable ones).
     private val preloadAttempts = 3
 
+    // Stream fallback state for the track that failed. retryTrackId pins the fallback to the
+    // track the user asked for, so a preload error on an already-advancing timeline can't be
+    // mistaken for a failure of the current song and restart it.
+    private var retryTrackId: String? = null
+    private var retryStreams: List<StreamUrl> = emptyList()
+    private var retryAttempts = 0
+    // URL ExoPlayer is actually playing; the fallback drops below this bitrate rather than
+    // guessing, so repeated failures walk steadily down the ladder.
+    private var lastStreamUrl: String? = null
+    // Latest quality preference, cached because the retry runs from a player listener callback
+    // where suspending to read DataStore is not an option.
+    private var lastQualitySetting: AudioQuality? = null
+
+    private val maxBitrateRetries = 2
+
+    init {
+        scope.launch {
+            settingsRepository.audioQuality.collect { lastQualitySetting = it }
+        }
+    }
+
     val player: ExoPlayer by lazy {
         val dataSourceFactory = DefaultHttpDataSource.Factory()
             .setUserAgent("VibeOn/${com.vibeon.music.BuildConfig.VERSION_NAME} (Android)")
@@ -126,10 +148,15 @@ class PlaybackManager @Inject constructor(
         }
 
         override fun onPlayerError(error: PlaybackException) {
-            _error.value = error.message?.let { "Playback error: $it" } ?: "Playback error"
-            // Transient per-track failures (network drop, expired URL, codec hiccup) must not
-            // silently halt the queue: skip on to the next track.
-            playNext()
+            // Most failures here are a single bad stream URL (expired or throttled), not an
+            // unavailable track. Retry the current track at a lower bitrate before giving up so
+            // a high-quality pick that 403s doesn't silently skip the song.
+            retryAtLowerBitrate() ?: run {
+                _error.value = error.message?.let { "Playback error: $it" } ?: "Playback error"
+                // Transient per-track failures (network drop, expired URL, codec hiccup) must not
+                // silently halt the queue: skip on to the next track.
+                playNext()
+            }
         }
     }
 
@@ -261,6 +288,13 @@ class PlaybackManager @Inject constructor(
             if (index + 1 in _queue.value.indices) playAt(index + 1)
             return
         }
+        // Remember the resolved stream so a mid-playback failure can retry the same track at a
+        // lower bitrate instead of skipping it. Cleared on every new play so a queued track that
+        // was only preloaded never inherits the previous track's fallback candidate.
+        retryTrackId = song.videoId
+        retryStreams = response?.streams.orEmpty()
+        retryAttempts = 0
+        lastStreamUrl = stream.url
         try {
             player.stop()
             player.clearMediaItems()
@@ -324,6 +358,47 @@ class PlaybackManager @Inject constructor(
             i++
         }
         return null
+    }
+
+    /**
+     * Retries the failing track at the next-lower bitrate, keeping the user's quality setting as
+     * the ceiling (LOW stays on its lowest rung). Returns true when a retry was started, false
+     * when there is nothing lower to try and the caller should advance the queue.
+     */
+    private fun retryAtLowerBitrate(): Boolean {
+        val trackId = retryTrackId ?: return false
+        if (retryStreams.isEmpty() || retryAttempts >= maxBitrateRetries) return false
+        val current = _currentSong.value?.videoId
+        if (current != null && current != trackId) return false
+        val ceiling = lastQualitySetting ?: return false
+        val failedBitrate = retryStreams
+            .filter { it.url == lastStreamUrl }
+            .maxByOrNull { it.bitrate }
+            ?.bitrate
+            ?: retryStreams.maxOf { it.bitrate }
+        val candidate = retryStreams
+            .filter { it.bitrate < failedBitrate }
+            .let { lower ->
+                when (ceiling) {
+                    AudioQuality.HIGH -> lower.maxByOrNull { it.bitrate }
+                    AudioQuality.NORMAL -> lower.sortedByDescending { it.bitrate }
+                        .firstOrNull { it.bitrate <= 160_000 } ?: lower.maxByOrNull { it.bitrate }
+                    AudioQuality.LOW -> lower.minByOrNull { it.bitrate }
+                }
+            }
+            ?: return false
+        val song = _currentSong.value ?: return false
+        retryAttempts++
+        lastStreamUrl = candidate.url
+        return runCatching {
+            player.stop()
+            player.clearMediaItems()
+            player.setMediaItem(buildMediaItem(song, candidate))
+            player.prepare()
+            ensureMediaSession()
+            player.play()
+            armNextTrack()
+        }.isSuccess
     }
 
     private fun buildMediaItem(song: Song, stream: StreamUrl): MediaItem {
