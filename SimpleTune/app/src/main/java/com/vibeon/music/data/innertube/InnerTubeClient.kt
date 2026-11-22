@@ -42,7 +42,7 @@ class InnerTubeClient @Inject constructor() {
         }
     }
 
-    private fun musicContext(): JsonObject = buildJsonObject {
+    private fun musicContext(visitorData: String? = null): JsonObject = buildJsonObject {
         put(
             "client",
             buildJsonObject {
@@ -51,6 +51,10 @@ class InnerTubeClient @Inject constructor() {
                 put("hl", "en")
                 put("gl", "US")
                 put("timeZone", "UTC")
+                // A fresh visitor id per home load stops YouTube from replaying the exact
+                // same personalized slice every time. call() also sends it as the
+                // X-Goog-Visitor-Id header.
+                visitorData?.let { put("visitorData", it) }
             }
         )
         put(
@@ -124,23 +128,33 @@ class InnerTubeClient @Inject constructor() {
             music = true,
         )
 
-    suspend fun browse(browseId: String, params: String? = null): JsonObject? =
-        call(
+    suspend fun browse(
+        browseId: String,
+        params: String? = null,
+        freshVisitor: Boolean = false,
+    ): JsonObject? {
+        val visitor = if (freshVisitor) {
+            "vibeon" + java.util.UUID.randomUUID().toString().replace("-", "")
+        } else {
+            null
+        }
+        return call(
             "browse",
             buildJsonObject {
-                put("context", musicContext())
+                put("context", musicContext(visitor))
                 put("browseId", browseId)
                 put("isUPA", false)
                 params?.let { put("params", it) }
             },
             music = true,
         )
+    }
 
-    suspend fun continuation(token: String): JsonObject? =
+    suspend fun continuation(token: String, visitorData: String? = null): JsonObject? =
         call(
             "browse",
             buildJsonObject {
-                put("context", musicContext())
+                put("context", musicContext(visitorData))
                 put("continuation", token)
             },
             music = true,

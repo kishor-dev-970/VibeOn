@@ -59,6 +59,7 @@ import com.vibeon.music.ui.theme.VibeOnTextSubtle
 fun FriendsScreen(
     onOpenFriend: (String) -> Unit,
     onOpenSettings: () -> Unit,
+    onBack: () -> Unit = {},
     viewModel: FriendsViewModel = hiltViewModel(),
 ) {
     val friends by viewModel.friends.collectAsState()

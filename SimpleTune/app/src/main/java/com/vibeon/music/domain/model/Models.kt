@@ -57,6 +57,11 @@ data class BrowseItem(
     val browseId: String? = null,
     val thumbnailUrl: String? = null,
     val year: Int? = null,
+    val artists: List<String> = emptyList(),
+    val artistIds: List<String> = emptyList(),
+    val playCount: String = "",
+    val badge: String = "",
+    val creator: String = "",
 )
 
 @Serializable
@@ -67,7 +72,18 @@ data class HomeChip(
 )
 
 @Serializable
+data class ExploreTile(
+    val label: String,
+    val browseId: String,
+    val params: String? = null,
+    val color: Long? = null,
+)
+
+@Serializable
 enum class HomeSectionLayout { CAROUSEL, GRID, LIST }
+
+@Serializable
+enum class HomeSectionKind { NORMAL, PROMO, TASTEBUILDER }
 
 @Serializable
 data class HomeSection(
@@ -75,6 +91,11 @@ data class HomeSection(
     val items: List<BrowseItem>,
     val moreBrowseId: String? = null,
     val layout: HomeSectionLayout = HomeSectionLayout.CAROUSEL,
+    val strapline: String = "",
+    val kind: HomeSectionKind = HomeSectionKind.NORMAL,
+    val playAllVideoId: String? = null,
+    val playAllParams: String? = null,
+    val moreLabel: String = "More",
 )
 
 data class StreamUrl(

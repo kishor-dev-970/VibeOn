@@ -1,11 +1,19 @@
 package com.vibeon.music.ui.navigation
 
+/**
+ * Routes. The three bottom tabs (Library / Home / Friends) are pages inside
+ * [Screen.MainShell]; everything else is a pushed destination on top of it, so
+ * back always returns to whichever tab the user was on. This mirrors the
+ * LastWave-style shell without copying its code.
+ */
 sealed class Screen(val route: String) {
-    object Home : Screen("home")
+    object MainShell : Screen("main_shell")
     object Search : Screen("search")
-    object Library : Screen("library")
     object Friends : Screen("friends")
     object NowPlaying : Screen("nowPlaying")
+    object Discover : Screen("discover")
+    object Genres : Screen("genres")
+    object ListeningStats : Screen("listeningStats")
     object Playlist : Screen("playlist/{type}/{browseId}") {
         fun create(browseId: String) = "playlist/PLAYLIST/$browseId"
     }
@@ -21,8 +29,9 @@ sealed class Screen(val route: String) {
     object Settings : Screen("settings")
 }
 
-enum class BottomTab(val route: String, val label: String) {
-    Library("library", "Library"),
-    Home("home", "Home"),
-    Friends("friends", "Friends"),
+/** The three swipeable bottom tabs, in the original VibeOn order. */
+enum class BottomTab(val label: String) {
+    Library("Library"),
+    Home("Home"),
+    Friends("Friends"),
 }

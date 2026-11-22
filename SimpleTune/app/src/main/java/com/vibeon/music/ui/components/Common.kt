@@ -5,6 +5,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -43,6 +44,7 @@ import com.vibeon.music.domain.model.Song
 import com.vibeon.music.ui.theme.VibeOnBgCard
 import com.vibeon.music.ui.theme.VibeOnBgCardLight
 import com.vibeon.music.ui.theme.VibeOnBorder
+import com.vibeon.music.ui.theme.VibeOnGlassBg
 import com.vibeon.music.ui.theme.VibeOnPrimary
 import com.vibeon.music.ui.theme.VibeOnSuccess
 import com.vibeon.music.ui.theme.VibeOnText
@@ -64,6 +66,28 @@ fun GradientBackground(modifier: Modifier = Modifier, content: @Composable () ->
     ) {
         content()
     }
+}
+
+/**
+ * Frosted-glass panel: a translucent tinted surface with a subtle top highlight and a
+ * hairline border. Used for the player surfaces so they read as layered over the artwork.
+ */
+@Composable
+fun GlassSurface(
+    modifier: Modifier = Modifier,
+    shape: RoundedCornerShape = RoundedCornerShape(20.dp),
+    tint: Color = VibeOnGlassBg,
+    borderColor: Color = Color.White.copy(alpha = 0.10f),
+    content: @Composable BoxScope.() -> Unit,
+) {
+    Box(
+        modifier = modifier
+            .clip(shape)
+            .background(tint)
+            .background(Brush.verticalGradient(listOf(Color(0x14FFFFFF), Color(0x02FFFFFF))))
+            .border(1.dp, borderColor, shape),
+        content = content,
+    )
 }
 
 @Composable
@@ -214,16 +238,32 @@ fun BrowseCard(
                     Modifier.size(width, width * 0.75f)
                 },
             )
-            when (item.type) {
-                ItemType.SONG, ItemType.VIDEO -> {
-                    Box(
-                        modifier = Modifier
-                            .size(width * 0.75f, width * 0.6f)
-                            .padding(8.dp)
-                            .align(Alignment.BottomEnd)
-                    )
-                }
-                else -> Unit
+            // Type badge (Album / Single / EP / Chart) like YT Music's new releases.
+            if (item.badge.isNotBlank()) {
+                Text(
+                    text = item.badge.uppercase(),
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .padding(6.dp)
+                        .background(Color(0xCC000000), RoundedCornerShape(4.dp))
+                        .padding(horizontal = 6.dp, vertical = 2.dp),
+                    color = Color.White,
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold,
+                )
+            }
+            // Play count overlay for community playlists / charts.
+            if (item.playCount.isNotBlank()) {
+                Text(
+                    text = item.playCount,
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(6.dp)
+                        .background(Color(0xCC000000), RoundedCornerShape(4.dp))
+                        .padding(horizontal = 6.dp, vertical = 2.dp),
+                    color = Color.White,
+                    style = MaterialTheme.typography.labelSmall,
+                )
             }
         }
         Spacer(Modifier.height(6.dp))
@@ -235,9 +275,15 @@ fun BrowseCard(
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
-        if (item.subtitle.isNotBlank()) {
+        val meta = buildList {
+            if (item.creator.isNotBlank()) add(item.creator)
+            if (item.playCount.isNotBlank()) add(item.playCount)
+        }.joinToString(" · ")
+        // When creator/views were extracted, the raw subtitle repeats them — prefer meta.
+        val subtitle = meta.ifBlank { item.subtitle }
+        if (subtitle.isNotBlank()) {
             Text(
-                text = item.subtitle,
+                text = subtitle,
                 color = VibeOnTextMuted,
                 style = MaterialTheme.typography.bodySmall,
                 maxLines = 1,

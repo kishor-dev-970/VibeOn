@@ -6,9 +6,11 @@ import com.vibeon.music.domain.model.Artist
 import com.vibeon.music.domain.model.BrowseItem
 import com.vibeon.music.domain.model.HomeChip
 import com.vibeon.music.domain.model.HomeSection
+import com.vibeon.music.domain.model.HomeSectionKind
 import com.vibeon.music.domain.model.HomeSectionLayout
 import com.vibeon.music.domain.model.Image
 import com.vibeon.music.domain.model.ItemType
+import com.vibeon.music.domain.model.ExploreTile
 import com.vibeon.music.domain.model.Playlist
 import com.vibeon.music.domain.model.SearchResults
 import com.vibeon.music.domain.model.Song
@@ -59,6 +61,75 @@ internal object InnerTubeParser {
 
     private fun runsText(runs: JsonArray?): String =
         runs?.mapNotNull { (it as? JsonObject)?.str("text") }?.joinToString("") ?: ""
+
+    private fun textValue(json: JsonObject?): String {
+        json ?: return ""
+        val runs = json.arr("runs")
+        if (runs != null) return runsText(runs)
+        return json.str("simpleText") ?: ""
+    }
+
+    /**
+     * Artist runs carry a channel browseId, so we can keep both the display names and
+     * the ids needed to open the artist page instead of showing "Unknown artist".
+     */
+    private fun artistsOf(runs: JsonArray?): Pair<List<String>, List<String>> {
+        val names = mutableListOf<String>()
+        val ids = mutableListOf<String>()
+        runs?.forEach { element ->
+            val run = element as? JsonObject ?: return@forEach
+            val name = run.str("text") ?: return@forEach
+            if (name.isBlank() || name == ", " || name == " • ") return@forEach
+            val browseId = (run.deepFind("browseEndpoint") as? JsonObject)?.str("browseId")
+            if (browseId?.startsWith("UC") == true && name !in names) {
+                names += name
+                ids += browseId
+            }
+        }
+        return names to ids
+    }
+
+    private val viewCountRegex = Regex("""([\d.,]+\s*[KMB]?\s*views?)\b""", RegexOption.IGNORE_CASE)
+    private val knownBadges = setOf("album", "single", "ep", "chart", "playlist", "video", "song")
+
+    private fun badgeAndCreator(subtitle: String): Pair<String, String> {
+        val parts = subtitle.split(" • ", " · ").map { it.trim() }
+        val badge = parts.firstOrNull { it.lowercase() in knownBadges } ?: ""
+        val creator = if (subtitle.contains("views", ignoreCase = true)) {
+            parts.firstOrNull { it.isNotBlank() && !it.contains("views", ignoreCase = true) } ?: ""
+        } else {
+            ""
+        }
+        return badge to creator
+    }
+
+    private fun straplineOf(header: JsonObject?): String {
+        val basic = header?.obj("musicCarouselShelfBasicHeaderRenderer")
+            ?: header?.obj("musicImmersiveCarouselShelfHeaderRenderer")
+            ?: header?.obj("musicResponsiveListHeaderRenderer")
+            ?: return ""
+        return textValue(basic.obj("strapline")).ifBlank { textValue(basic.obj("straplineText")) }
+    }
+
+    private data class MoreAction(
+        val browseId: String?,
+        val videoId: String?,
+        val params: String?,
+        val label: String,
+    )
+
+    private fun moreActionOf(header: JsonObject?): MoreAction? {
+        val basic = header?.obj("musicCarouselShelfBasicHeaderRenderer")
+            ?: header?.obj("musicImmersiveCarouselShelfHeaderRenderer")
+            ?: return null
+        val button = basic.obj("moreContentButton")?.obj("buttonRenderer") ?: return null
+        val nav = button.obj("navigationEndpoint") ?: return null
+        val browseId = nav.obj("browseEndpoint")?.str("browseId")
+        val videoId = nav.obj("watchEndpoint")?.str("videoId")
+        val params = nav.obj("watchEndpoint")?.str("params")
+        if (browseId == null && videoId == null) return null
+        return MoreAction(browseId, videoId, params, textValue(button.obj("text")))
+    }
 
     private fun titleOf(json: JsonObject?): String? {
         json ?: return null
@@ -132,20 +203,34 @@ internal object InnerTubeParser {
         }
     }
 
+    private fun playCountOf(item: JsonObject, subtitle: String): String {
+        val fromJson = (item.deepFind("viewCountText") as? JsonObject)
+            ?.let { textValue(it) }
+            ?.takeIf { it.isNotBlank() }
+        return fromJson ?: viewCountRegex.find(subtitle)?.value.orEmpty()
+    }
+
     private fun browseItemFromTwoRow(item: JsonObject): BrowseItem? {
         val title = item.str("title", "runs") ?: titleOf(item) ?: return null
         val subtitle = runsText(item.arr("subtitle", "runs"))
         val (videoId, browseId) = navigationOf(item)
         val type = itemTypeOf(browseId) ?: if (videoId != null) ItemType.VIDEO else ItemType.UNKNOWN
-        val year = subtitle?.let { it.trim().toIntOrNull() }
+        val year = subtitle.trim().toIntOrNull()
+        val (artists, artistIds) = artistsOf(item.arr("subtitle", "runs"))
+        val (badge, creator) = badgeAndCreator(subtitle)
         return BrowseItem(
             type = type,
             title = title,
-            subtitle = subtitle ?: "",
+            subtitle = subtitle,
             videoId = videoId,
             browseId = browseId,
             thumbnailUrl = thumbnailUrl(item),
             year = year,
+            artists = artists,
+            artistIds = artistIds,
+            playCount = playCountOf(item, subtitle),
+            badge = badge,
+            creator = creator,
         )
     }
 
@@ -155,6 +240,10 @@ internal object InnerTubeParser {
         val (videoId, browseId) = navigationOf(item)
         if (videoId == null && browseId == null) return null
         val subtitle = (flexText(item, 1) ?: "").replace(" • ", " · ")
+        val artistRuns = (item.arr("flexColumns")?.getOrNull(1) as? JsonObject)
+            ?.obj("musicResponsiveListItemFlexColumnRenderer")?.arr("text", "runs")
+        val (artists, artistIds) = artistsOf(artistRuns)
+        val (badge, creator) = badgeAndCreator(subtitle)
         val type = itemTypeOf(browseId) ?: if (videoId != null) ItemType.SONG else ItemType.UNKNOWN
         return BrowseItem(
             type = type,
@@ -163,6 +252,11 @@ internal object InnerTubeParser {
             videoId = videoId,
             browseId = browseId,
             thumbnailUrl = thumbnailUrl(item, videoId),
+            artists = artists,
+            artistIds = artistIds,
+            playCount = playCountOf(item, subtitle),
+            badge = badge,
+            creator = creator,
         )
     }
 
@@ -226,6 +320,40 @@ internal object InnerTubeParser {
         return HomeSectionResponse(sections, more, chips)
     }
 
+    /**
+     * Explore / mood tiles use musicNavigationButtonRenderer with a browseEndpoint in
+     * clickCommand and an optional ARGB stripe colour. Walk the tree because the tiles
+     * appear inside different grid/carousel wrappers for each feed.
+     */
+    fun parseExploreTiles(body: JsonObject): List<ExploreTile> {
+        val found = mutableListOf<ExploreTile>()
+        fun walk(node: JsonElement?, depth: Int) {
+            if (depth > 16 || node == null) return
+            when (node) {
+                is JsonObject -> {
+                    node.obj("musicNavigationButtonRenderer")?.let { button ->
+                        val label = textValue(button.obj("buttonText"))
+                        val endpoint = button.obj("clickCommand")?.obj("browseEndpoint")
+                        val browseId = endpoint?.str("browseId")
+                        if (label.isNotBlank() && browseId != null) {
+                            found += ExploreTile(
+                                label = label,
+                                browseId = browseId,
+                                params = endpoint.str("params"),
+                                color = button.obj("solid")?.str("leftStripeColor")?.toLongOrNull(),
+                            )
+                        }
+                    }
+                    node.values.forEach { walk(it, depth + 1) }
+                }
+                is JsonArray -> node.forEach { walk(it, depth + 1) }
+                else -> Unit
+            }
+        }
+        walk(body, 0)
+        return found.distinctBy { it.label }
+    }
+
     private fun parseChips(header: JsonObject?): List<HomeChip> {
         header ?: return emptyList()
         val chips = header.obj("chipCloudRenderer")?.arr("chips") ?: return emptyList()
@@ -245,37 +373,67 @@ internal object InnerTubeParser {
     }
 
     private fun homeSectionOf(section: JsonObject): HomeSection? {
+        section.obj("musicTastebuilderShelfRenderer")?.let { card ->
+            val title = textValue(card.obj("primaryText"))
+            if (title.isBlank()) return null
+            return HomeSection(
+                title = title,
+                items = emptyList(),
+                strapline = textValue(card.obj("secondaryText")),
+                kind = HomeSectionKind.TASTEBUILDER,
+            )
+        }
         section.obj("musicCarouselShelfRenderer")?.let { carousel ->
             val title = headerTitle(carousel.obj("header")) ?: return null
             val items = carouselItems(carousel.arr("contents"))
             if (items.isEmpty()) return null
-            val more = continuationOf(carousel.arr("continuations"))
-            return HomeSection(title, items, more)
+            val more = moreActionOf(carousel.obj("header"))
+            val strapline = straplineOf(carousel.obj("header"))
+            return HomeSection(
+                title = title,
+                items = items,
+                moreBrowseId = more?.browseId,
+                strapline = strapline,
+                kind = if (strapline.isBlank()) HomeSectionKind.NORMAL else HomeSectionKind.PROMO,
+                playAllVideoId = more?.videoId,
+                playAllParams = more?.params,
+                moreLabel = more?.label?.takeIf { it.isNotBlank() } ?: "More",
+            )
         }
         section.obj("musicImmersiveCarouselShelfRenderer")?.let { carousel ->
             val title = headerTitle(carousel.obj("header")) ?: return null
             val items = carouselItems(carousel.arr("contents"))
             if (items.isEmpty()) return null
-            return HomeSection(title, items, null)
+            return HomeSection(
+                title = title,
+                items = items,
+                strapline = straplineOf(carousel.obj("header")),
+                kind = HomeSectionKind.PROMO,
+            )
         }
         section.obj("musicResponsiveListRenderer")?.let { list ->
             val title = headerTitle(list.obj("header")) ?: return null
             val items = flattenContents(list.arr("contents")).mapNotNull { browseItemOf(it) }
             if (items.isEmpty()) return null
-            val more = continuationOf(list.arr("continuations"))
+            val more = moreActionOf(list.obj("header"))
             val layout = if (items.all { it.type == ItemType.SONG && it.videoId != null }) {
                 HomeSectionLayout.LIST
             } else {
                 HomeSectionLayout.GRID
             }
-            return HomeSection(title, items, more, layout)
+            return HomeSection(
+                title = title,
+                items = items,
+                moreBrowseId = more?.browseId,
+                layout = layout,
+                moreLabel = more?.label?.takeIf { it.isNotBlank() } ?: "More",
+            )
         }
         section.obj("musicMultiRowBrowseResultsRenderer")?.let { multi ->
             val title = headerTitle(multi.obj("header")) ?: return null
             val items = flattenContents(multi.arr("contents")).mapNotNull { browseItemOf(it) }
             if (items.isEmpty()) return null
-            val more = continuationOf(multi.arr("continuations"))
-            return HomeSection(title, items, more, HomeSectionLayout.GRID)
+            return HomeSection(title, items, null, HomeSectionLayout.GRID)
         }
         section.obj("musicShelfRenderer")?.let { shelf ->
             val content = shelf.obj("content") ?: return null
@@ -285,8 +443,14 @@ internal object InnerTubeParser {
             val title = headerTitle(shelf.obj("header")) ?: return null
             val items = flattenContents(list.arr("contents")).mapNotNull { browseItemOf(it) }
             if (items.isEmpty()) return null
-            val more = continuationOf(list.arr("continuations"))
-            return HomeSection(title, items, more, HomeSectionLayout.LIST)
+            val more = moreActionOf(shelf.obj("header"))
+            return HomeSection(
+                title = title,
+                items = items,
+                moreBrowseId = more?.browseId,
+                layout = HomeSectionLayout.LIST,
+                moreLabel = more?.label?.takeIf { it.isNotBlank() } ?: "More",
+            )
         }
         section.obj("gridRenderer")?.let { grid ->
             val items = grid.arr("items").orEmpty()
@@ -305,6 +469,16 @@ internal object InnerTubeParser {
 
     fun parseHomeMore(body: JsonObject): HomeSectionResponse? {
         val container = body.obj("continuationContents") ?: return null
+        // Feed-level continuation (home "load more"): a batch of new sections, same
+        // shape as the initial sectionListRenderer contents.
+        container.obj("sectionListContinuation")?.let { feed ->
+            val sections = feed.arr("contents")
+                ?.mapNotNull { homeSectionOf(it as? JsonObject ?: return@mapNotNull null) }
+                .orEmpty()
+            val more = continuationOf(feed.arr("continuations"))
+            return HomeSectionResponse(sections, more, emptyList())
+        }
+        // Single-list continuation (a section's own "More" page).
         val theList = container.obj("musicCarouselShelfRenderer")
         val list = theList
             ?: container.obj("musicResponsiveListRenderer")
@@ -673,6 +847,14 @@ data class HomeSectionResponse(
     val sections: List<HomeSection>,
     val continuation: String?,
     val chips: List<HomeChip> = emptyList(),
+    // YouTube binds continuation tokens to the visitor id returned in the browse
+    // response. We must echo the real id (not the synthetic one we sent) on the
+    // continuation request or the feed comes back empty.
+    val visitorData: String? = null,
+)
+data class ExploreData(
+    val tiles: List<com.vibeon.music.domain.model.ExploreTile> = emptyList(),
+    val sections: List<HomeSection> = emptyList(),
 )
 data class PlayerData(
     val playabilityStatus: String,

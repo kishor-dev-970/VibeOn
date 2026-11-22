@@ -8,6 +8,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
@@ -27,6 +28,17 @@ class LibraryViewModel @Inject constructor(
 
     val playlists: StateFlow<List<LibraryRepository.UserPlaylist>> = libraryRepository.playlists
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    private val _playlistCounts = MutableStateFlow<Map<Long, Int>>(emptyMap())
+    val playlistCounts: StateFlow<Map<Long, Int>> = _playlistCounts.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            playlists.collect { list ->
+                _playlistCounts.value = list.associate { it.id to libraryRepository.playlistSongCount(it.id) }
+            }
+        }
+    }
 
     private val _selectedPlaylistId = MutableStateFlow<Long?>(null)
     val selectedPlaylistId: StateFlow<Long?> = _selectedPlaylistId

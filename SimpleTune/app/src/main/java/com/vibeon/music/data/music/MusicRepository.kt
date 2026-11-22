@@ -2,6 +2,7 @@ package com.vibeon.music.data.music
 
 import com.vibeon.music.data.innertube.AlbumResponse
 import com.vibeon.music.data.innertube.ArtistResponse
+import com.vibeon.music.data.innertube.ExploreData
 import com.vibeon.music.data.innertube.HomeSectionResponse
 import com.vibeon.music.data.innertube.InnerTubeClient
 import com.vibeon.music.data.innertube.InnerTubeParser
@@ -12,18 +13,29 @@ import com.vibeon.music.domain.model.Album
 import com.vibeon.music.domain.model.Artist
 import com.vibeon.music.domain.model.BrowseItem
 import com.vibeon.music.domain.model.HomeSection
+import com.vibeon.music.domain.model.HomeSectionKind
 import com.vibeon.music.domain.model.Playlist
 import com.vibeon.music.domain.model.PlayerResponse
 import com.vibeon.music.domain.model.SearchResults
 import com.vibeon.music.domain.model.Song
 import com.vibeon.music.domain.model.StreamUrl
+import com.vibeon.music.util.obj
+import com.vibeon.music.util.str
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import java.util.concurrent.atomic.AtomicInteger
 import javax.inject.Inject
 import javax.inject.Singleton
 
 enum class SearchFilter { SONGS, VIDEOS, ALBUMS, ARTISTS, PLAYLISTS }
+
+private fun <T> List<T>.rotatedBy(shift: Int): List<T> {
+    if (size <= 1) return this
+    val offset = ((shift % size) + size) % size
+    if (offset == 0) return this
+    return drop(offset) + take(offset)
+}
 
 @Singleton
 class MusicRepository @Inject constructor(
@@ -31,6 +43,11 @@ class MusicRepository @Inject constructor(
     private val potMinter: PoTokenMinter,
 ) {
     private val streamCache = mutableMapOf<String, PlayerResponse>()
+
+    // Increments on every home load so the same chip never renders the exact same
+    // set of cards twice, even when YouTube returns a deterministic feed.
+    private val homeLoadSequence = AtomicInteger(0)
+
     data class Queue(
         val songs: List<Song> = emptyList(),
         val currentIndex: Int = -1,
@@ -40,34 +57,91 @@ class MusicRepository @Inject constructor(
     val queue: StateFlow<Queue> = _queue.asStateFlow()
 
     suspend fun fetchHome(params: String? = null): HomeSectionResponse? {
-        val home = client.browse("FEmusic_home", params)?.let { InnerTubeParser.parseHome(it) }
-        if (params != null || home == null) return home
-        // The default feed is personalized and can be sparse for new accounts. Pin
-        // curated genre sections (from the chip feeds) on top so Home always shows a
-        // rich, varied mix: pop / English hits, romantic (Hindi) hits, and more.
-        return try {
-            val curated = mutableListOf<HomeSection>()
-            for (label in listOf("Energize", "Romance", "Feel good")) {
-                val chip = home.chips.firstOrNull { it.label == label } ?: continue
-                val genreHome = client.browse("FEmusic_home", chip.params)?.let { InnerTubeParser.parseHome(it) } ?: continue
-                for (section in genreHome.sections.filter { it.items.isNotEmpty() }.take(3)) {
-                    if (curated.none { it.title.equals(section.title, ignoreCase = true) }) {
-                        curated.add(section)
+        val seed = homeLoadSequence.getAndIncrement()
+        val rawHome = client.browse("FEmusic_home", params, freshVisitor = true) ?: return null
+        val realVisitor = rawHome.obj("responseContext")?.str("visitorData")
+        val home = InnerTubeParser.parseHome(rawHome) ?: return null
+
+        var sections = home.sections
+            .filter { it.items.isNotEmpty() || it.kind == HomeSectionKind.TASTEBUILDER }
+            .toMutableList()
+
+        if (params == null) {
+            // The default feed is personalized and can be sparse for new accounts. Pin a
+            // rotating set of curated genre sections on top so Home always shows a rich
+            // mix, and so the mix itself changes from one visit to the next.
+            try {
+                val curated = mutableListOf<HomeSection>()
+                val genres = listOf(
+                    "Energize", "Romance", "Feel good", "Party", "Relax",
+                    "Workout", "Focus", "Sad", "Commute", "Sleep",
+                ).rotatedBy(seed)
+                var attempts = 0
+                for (label in genres) {
+                    if (attempts++ >= 4 || curated.size >= 4) break
+                    val chip = home.chips.firstOrNull { it.label.equals(label, ignoreCase = true) }
+                        ?: continue
+                    val genreHome = client.browse("FEmusic_home", chip.params, freshVisitor = true)
+                        ?.let { InnerTubeParser.parseHome(it) }
+                        ?: continue
+                    for (section in genreHome.sections.filter { it.items.isNotEmpty() }.take(2)) {
+                        val duplicate = (curated + sections).any {
+                            it.title.equals(section.title, ignoreCase = true)
+                        }
+                        if (!duplicate) curated.add(section)
                     }
                 }
+                sections = (curated + sections).toMutableList()
+            } catch (_: Exception) {
+                // Keep the plain personalized feed if the curated lookups fail.
             }
-            val sections = (curated + home.sections)
-                .filter { it.items.isNotEmpty() }
-                .distinctBy { it.title }
-                .toMutableList()
-            home.copy(sections = sections)
-        } catch (_: Exception) {
-            home
         }
+
+        // YouTube often returns the same items for the same genre params. Rotate the
+        // cards inside every section (and the section order) by the load seed so that
+        // tapping a chip again or pulling to refresh always surfaces a different mix.
+        val refreshed = sections
+            .mapIndexed { index, section ->
+                section.copy(items = section.items.rotatedBy(seed + index * 7))
+            }
+            .rotatedBy(seed)
+            .distinctBy { it.title }
+
+        return home.copy(sections = refreshed, visitorData = realVisitor)
     }
 
-    suspend fun fetchHomeMore(continuation: String): HomeSectionResponse? =
-        client.continuation(continuation)?.let { InnerTubeParser.parseHomeMore(it) }
+    suspend fun fetchHomeMore(continuation: String, visitorData: String? = null): HomeSectionResponse? =
+        client.continuation(continuation, visitorData)?.let { InnerTubeParser.parseHomeMore(it) }
+
+    /** Explore landing: quick links + mood tiles + featured shelves. */
+    suspend fun fetchExplore(): ExploreData? {
+        val explore = client.browse("FEmusic_explore", freshVisitor = true) ?: return null
+        val moods = client.browse("FEmusic_moods_and_genres", freshVisitor = true)
+        val charts = client.browse("FEmusic_charts", freshVisitor = true)
+        val sections = buildList {
+            fun addSections(body: kotlinx.serialization.json.JsonObject?) {
+                body ?: return
+                val parsed = InnerTubeParser.parseHome(body) ?: return
+                addAll(parsed.sections.filter { it.items.isNotEmpty() })
+            }
+            addSections(explore)
+            addSections(charts)
+        }
+        return ExploreData(
+            tiles = InnerTubeParser.parseExploreTiles(explore) + (moods?.let { InnerTubeParser.parseExploreTiles(it) } ?: emptyList()),
+            sections = sections,
+        )
+    }
+
+    /** A tile destination (charts, moods category, new releases, …) rendered as shelves. */
+    suspend fun fetchExploreCategory(browseId: String, params: String?): ExploreData? {
+        val body = client.browse(browseId, params, freshVisitor = true) ?: return null
+        val parsed = InnerTubeParser.parseHome(body)
+        return ExploreData(
+            tiles = InnerTubeParser.parseExploreTiles(body),
+            sections = parsed?.sections?.filter { it.items.isNotEmpty() } ?: emptyList(),
+        )
+    }
 
     suspend fun search(query: String, filter: SearchFilter = SearchFilter.SONGS): SearchResults {
         val params = when (filter) {

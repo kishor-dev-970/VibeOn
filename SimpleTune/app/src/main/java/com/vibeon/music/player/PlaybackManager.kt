@@ -66,6 +66,12 @@ class PlaybackManager @Inject constructor(
     private val _queueIndex = MutableStateFlow(-1)
     val queueIndex: StateFlow<Int> = _queueIndex.asStateFlow()
 
+    private val _shuffle = MutableStateFlow(false)
+    val shuffle: StateFlow<Boolean> = _shuffle.asStateFlow()
+
+    private val _repeatMode = MutableStateFlow(Player.REPEAT_MODE_OFF)
+    val repeatMode: StateFlow<Int> = _repeatMode.asStateFlow()
+
     private val _sleepTimerMinutes = MutableStateFlow<Int?>(null)
     val sleepTimerMinutes: StateFlow<Int?> = _sleepTimerMinutes.asStateFlow()
 
@@ -131,7 +137,16 @@ class PlaybackManager @Inject constructor(
                 _error.value = null
             } else if (playbackState == Player.STATE_ENDED) {
                 _isPlaying.value = false
-                playNext()
+                when (_repeatMode.value) {
+                    Player.REPEAT_MODE_ONE -> {
+                        player.seekTo(0)
+                        player.play()
+                    }
+                    Player.REPEAT_MODE_ALL -> {
+                        if (_queueIndex.value >= _queue.value.lastIndex) playAt(0) else playNext()
+                    }
+                    else -> playNext()
+                }
             }
         }
 
@@ -166,12 +181,100 @@ class PlaybackManager @Inject constructor(
 
     fun playQueue(songs: List<Song>, startIndex: Int) {
         if (songs.isEmpty()) return
-        _queue.value = songs
-        playAt(startIndex.coerceIn(0, songs.lastIndex))
+        val ordered = if (_shuffle.value) songs.shuffled() else songs
+        _queue.value = ordered
+        playAt(startIndex.coerceIn(0, ordered.lastIndex))
+    }
+
+    fun toggleShuffle() {
+        _shuffle.value = !_shuffle.value
+    }
+
+    fun cycleRepeatMode() {
+        _repeatMode.value = when (_repeatMode.value) {
+            Player.REPEAT_MODE_OFF -> Player.REPEAT_MODE_ALL
+            Player.REPEAT_MODE_ALL -> Player.REPEAT_MODE_ONE
+            else -> Player.REPEAT_MODE_OFF
+        }
     }
 
     fun addToQueue(song: Song) {
         _queue.value = _queue.value + song
+    }
+
+    /** Snapshot used by the queue UI to undo a removal without reloading anything. */
+    data class QueueSnapshot(val songs: List<Song>, val index: Int)
+
+    fun captureQueue(): QueueSnapshot = QueueSnapshot(_queue.value, _queueIndex.value)
+
+    /**
+     * Removes the track at [index] and keeps the player timeline in sync. When the playing
+     * track is removed we start the one that shifted into its place; otherwise only the
+     * upcoming window is rebuilt so the current song is never interrupted.
+     */
+    fun removeFromQueue(index: Int): Song? {
+        val current = _queue.value
+        if (index !in current.indices) return null
+        val removed = current[index]
+        val playingIndex = _queueIndex.value
+        val updated = current.toMutableList().apply { removeAt(index) }
+        _queue.value = updated
+        when {
+            updated.isEmpty() -> stop()
+            index == playingIndex -> playAt(index.coerceAtMost(updated.lastIndex))
+            index < playingIndex -> {
+                _queueIndex.value = playingIndex - 1
+                refreshUpcomingTimeline()
+            }
+            else -> refreshUpcomingTimeline()
+        }
+        return removed
+    }
+
+    /** Restores a queue captured before a removal (undo). */
+    fun restoreQueue(snapshot: QueueSnapshot) {
+        val playingId = _currentSong.value?.videoId
+        val restoredPlayingId = snapshot.songs.getOrNull(snapshot.index)?.videoId
+        _queue.value = snapshot.songs
+        if (restoredPlayingId != null && restoredPlayingId != playingId) {
+            playAt(snapshot.index)
+        } else {
+            _queueIndex.value = snapshot.index
+            refreshUpcomingTimeline()
+        }
+    }
+
+    /** Moves a track within the queue while keeping the current song selected. */
+    fun moveQueueItem(from: Int, to: Int) {
+        val list = _queue.value.toMutableList()
+        if (from !in list.indices || to !in list.indices || from == to) return
+        val playingId = _queue.value.getOrNull(_queueIndex.value)?.videoId
+        val item = list.removeAt(from)
+        list.add(to.coerceIn(0, list.lastIndex), item)
+        _queue.value = list
+        val newIndex = list.indexOfFirst { it.videoId == playingId }
+        if (newIndex >= 0) _queueIndex.value = newIndex
+        refreshUpcomingTimeline()
+    }
+
+    /** Jumps directly to a queue entry (click-to-play in the queue tab). */
+    fun jumpToQueueIndex(index: Int) {
+        if (index !in _queue.value.indices) return
+        if (index == _queueIndex.value) {
+            if (!player.isPlaying) togglePlayPause()
+            return
+        }
+        playAt(index)
+    }
+
+    /** Rebuilds only the "up next" player windows after a queue mutation. */
+    private fun refreshUpcomingTimeline() {
+        if (player.mediaItemCount == 0) return
+        val currentWindow = player.currentMediaItemIndex
+        if (currentWindow < player.mediaItemCount - 1) {
+            player.removeMediaItems(currentWindow + 1, player.mediaItemCount)
+        }
+        armNextTrack()
     }
 
     fun playNext() {
