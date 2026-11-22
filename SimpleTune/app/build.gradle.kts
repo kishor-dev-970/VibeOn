@@ -41,8 +41,8 @@ android {
         applicationId = "com.vibeon.music"
         minSdk = 29
         targetSdk = 36
-        versionCode = 6
-        versionName = providers.gradleProperty("VIBEON_VERSION_NAME").getOrElse("2.0.4")
+        versionCode = 7
+        versionName = providers.gradleProperty("VIBEON_VERSION_NAME").getOrElse("2.0.5")
         vectorDrawables { useSupportLibrary = true }
 
         buildConfigField("String", "SOCIAL_API_URL", "\"$socialApiUrl\"")
